@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ramdhanu 3D Archery — 50–100 m · 1–25 g · 2–10 mm Rings</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', system-ui, sans-serif; background: #090d16; color: #f8fafc; margin: 0; }
+    #stage-wrap canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 select-none">
+  <header class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-slate-900 border-b border-slate-800">
+    <div class="flex items-center gap-3">
+      <span class="text-base sm:text-lg font-bold tracking-tight text-amber-400">Ramdhanu 3D Archery</span>
+      <span id="hud-round" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-medium">Arrow 1 / 5</span>
+    </div>
+    <div class="flex items-center gap-3 sm:gap-5 text-xs sm:text-sm">
+      <div>Score: <span id="hud-score" class="font-bold text-emerald-400 tabular-nums">0</span></div>
+      <div>Best: <span id="hud-best" class="font-bold text-amber-300 tabular-nums">0</span></div>
+      <button id="btn-mute" type="button" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition">Sound: ON</button>
+      <button id="btn-reset" type="button" class="px-2.5 py-1 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition">New Round</button>
+    </div>
+  </header>
+
+  <main class="flex-1 flex flex-col lg:flex-row gap-3 p-3 max-w-6xl w-full mx-auto">
+    <div id="stage-wrap" class="relative flex-1 min-h-[360px] sm:min-h-[450px] bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-lg">
+      <div class="pointer-events-none absolute top-3 left-3 bg-slate-950/75 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700/70 text-xs text-slate-200">
+        Drag to aim Ramdhanu (up/down &amp; left/right), release to shoot!
+      </div>
+      <div class="pointer-events-none absolute top-3 right-3 bg-slate-950/85 backdrop-blur p-1.5 rounded-full border border-slate-700/80 shadow">
+        <canvas id="inset-canvas" width="116" height="116" class="block w-[108px] h-[108px] rounded-full"></canvas>
+      </div>
+      <div id="shot-banner" class="pointer-events-none hidden absolute bottom-3 left-3 right-3 sm:right-auto bg-slate-950/90 backdrop-blur px-3.5 py-2 rounded-lg border border-amber-500/40 text-xs sm:text-sm"></div>
+    </div>
+
+    <aside class="w-full lg:w-80 flex flex-col gap-3">
+      <div class="grid grid-cols-3 gap-2 bg-slate-900 p-3 rounded-xl border border-slate-800 text-center">
+        <div>
+          <div class="text-[11px] uppercase tracking-wider text-slate-400">Distance</div>
+          <div id="val-dist" class="text-base font-bold text-sky-400 tabular-nums">70 m</div>
+        </div>
+        <div>
+          <div class="text-[11px] uppercase tracking-wider text-slate-400">Wind</div>
+          <div id="val-wind" class="text-base font-bold text-cyan-300 tabular-nums">+1.4 m/s</div>
+        </div>
+        <div>
+          <div class="text-[11px] uppercase tracking-wider text-slate-400">Last Drop</div>
+          <div id="val-drop" class="text-base font-bold text-amber-300 tabular-nums">—</div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <label for="in-weight" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Arrow Weight (1–25 g)</label>
+          <span id="lbl-weight" class="text-sm font-bold text-amber-400 tabular-nums">12 g</span>
+        </div>
+        <input id="in-weight" type="range" min="1" max="25" step="1" value="12" class="w-full accent-amber-400 cursor-pointer">
+        <div class="grid grid-cols-3 gap-1.5 text-[11px]">
+          <button type="button" data-w="5" class="preset-w py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium">5 g Light</button>
+          <button type="button" data-w="12" class="preset-w py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium">12 g Mid</button>
+          <button type="button" data-w="22" class="preset-w py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium">22 g Heavy</button>
+        </div>
+        <div id="weight-note" class="text-xs text-slate-400">Balanced flight · 61 m/s · 1.23× score</div>
+      </div>
+
+      <div class="bg-slate-900 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <label for="in-dist" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Distance (50–100 m)</label>
+          <span id="lbl-dist" class="text-sm font-bold text-sky-400 tabular-nums">70 m</span>
+        </div>
+        <input id="in-dist" type="range" min="50" max="100" step="5" value="70" class="w-full accent-sky-400 cursor-pointer">
+
+        <div class="flex items-center justify-between mt-1">
+          <label for="in-elev" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Elevation (Pitch)</label>
+          <span id="lbl-elev" class="text-sm font-bold text-emerald-400 tabular-nums">+5.5°</span>
+        </div>
+        <input id="in-elev" type="range" min="0.5" max="15.0" step="0.1" value="5.5" class="w-full accent-emerald-400 cursor-pointer">
+
+        <div class="flex items-center justify-between mt-1">
+          <label for="in-yaw" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Windage (Left / Right)</label>
+          <span id="lbl-yaw" class="text-sm font-bold text-cyan-300 tabular-nums">0.0°</span>
+        </div>
+        <input id="in-yaw" type="range" min="-5.0" max="5.0" step="0.1" value="0.0" class="w-full accent-cyan-400 cursor-pointer">
+
+        <button id="btn-shoot" type="button" class="mt-1.5 w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition shadow">
+          Loose Ramdhanu Arrow
+        </button>
+      </div>
+
+      <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-xs">
+        <div class="font-semibold text-slate-300 mb-1.5">Circular Target Rings (at <span id="ref-dist">70</span> m)</div>
+        <div class="grid grid-cols-2 gap-y-1 text-slate-400">
+          <span class="text-amber-300 font-medium">2 mm Bullseye (10×)</span><span id="ring-2" class="text-right font-semibold text-slate-200 tabular-nums">860 pts</span>
+          <span>4 mm Ring (7.5×)</span><span id="ring-4" class="text-right tabular-nums">645 pts</span>
+          <span>6 mm Ring (5.0×)</span><span id="ring-6" class="text-right tabular-nums">430 pts</span>
+          <span>8 mm Ring (2.5×)</span><span id="ring-8" class="text-right tabular-nums">215 pts</span>
+          <span>10 mm Ring (1.0×)</span><span id="ring-10" class="text-right tabular-nums">86 pts</span>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    (function () {
+      const stageWrap = document.getElementById('stage-wrap');
+      const insetCanvas = document.getElementById('inset-canvas');
+      const insetCtx = insetCanvas.getContext('2d');
+
+      const state = {
+        distance: 70, weight: 12, wind: 1.4, elevDeg: 5.5, yawDeg: 0.0,
+        score: 0, best: 0, shotNum: 1, maxShots: 5,
+        muted: false, flying: false, followTimer: 0, arrowPhys: null, hits: [], totalHits: 0, stageHits: 0, startDistance: 70, dragging: false, dragStart: null, audioCtx: null
+      };
+
+      try { state.best = parseInt(localStorage.getItem('ramdhanu_best') || '0', 10) || 0; } catch (e) {}
+
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x1e1b3a, 0.0042);
+
+      const camera = new THREE.PerspectiveCamera(48, 16 / 9, 0.1, 450);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(window.devicePixelRatio || 1);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      stageWrap.prepend(renderer.domElement);
+
+      const skyGeo = new THREE.SphereGeometry(240, 32, 24);
+      const skyMat = new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        depthWrite: false,
+        uniforms: {
+          topColor: { value: new THREE.Color(0x0b132b) },
+          midColor: { value: new THREE.Color(0x4c1d95) },
+          horizonColor: { value: new THREE.Color(0xf97316) }
+        },
+        vertexShader: `
+          varying vec3 vWorldPos;
+          void main() {
+            vec4 wp = modelMatrix * vec4(position, 1.0);
+            vWorldPos = wp.xyz;
+            gl_Position = projectionMatrix * viewMatrix * wp;
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 topColor;
+          uniform vec3 midColor;
+          uniform vec3 horizonColor;
+          varying vec3 vWorldPos;
+          void main() {
+            float h = normalize(vWorldPos).y;
+            vec3 col = mix(horizonColor, midColor, smoothstep(0.0, 0.22, max(h, 0.0)));
+            col = mix(col, topColor, smoothstep(0.22, 0.72, max(h, 0.0)));
+            gl_FragColor = vec4(col, 1.0);
+          }
+        `
+      });
+      scene.add(new THREE.Mesh(skyGeo, skyMat));
+
+      const sunDisc = new THREE.Mesh(new THREE.CircleGeometry(11, 32), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+      sunDisc.position.set(28, 22, -195);
+      scene.add(sunDisc);
+
+      scene.add(new THREE.HemisphereLight(0xfdba74, 0x14532d, 0.75));
+      const sun = new THREE.DirectionalLight(0xffedd5, 1.45);
+      sun.position.set(24, 34, 18);
+      sun.castShadow = true;
+      sun.shadow.mapSize.width = 2048;
+      sun.shadow.mapSize.height = 2048;
+      sun.shadow.camera.near = 2;
+      sun.shadow.camera.far = 170;
+      sun.shadow.camera.left = -28;
+      sun.shadow.camera.right = 28;
+      sun.shadow.camera.top = 24;
+      sun.shadow.camera.bottom = -120;
+      scene.add(sun);
+
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(180, 260), new THREE.MeshLambertMaterial({ color: 0x166534 }));
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.set(0, 0, -90);
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      for (let m = 20; m <= 100; m += 20) {
+        const line = new THREE.Mesh(new THREE.PlaneGeometry(16, 0.18), new THREE.MeshBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.45 }));
+        line.rotation.x = -Math.PI / 2;
+        line.position.set(0, 0.02, -m);
+        scene.add(line);
+      }
+
+      const mtnMat = new THREE.MeshLambertMaterial({ color: 0x312e81 });
+      [
+        { x: -55, z: -165, r: 34, h: 28 }, { x: -12, z: -175, r: 40, h: 35 },
+        { x: 35, z: -170, r: 36, h: 30 }, { x: 75, z: -160, r: 32, h: 25 }
+      ].forEach(m => {
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(m.r, m.h, 7), mtnMat);
+        cone.position.set(m.x, m.h / 2 - 1, m.z);
+        scene.add(cone);
+      });
+
+      const trunkMat = new THREE.MeshLambertMaterial({ color: 0x78350f });
+      const leafMat = new THREE.MeshLambertMaterial({ color: 0x14532d });
+      for (let z = -15; z >= -125; z -= 18) {
+        [-14, 14].forEach((side, idx) => {
+          const tree = new THREE.Group();
+          const xOff = side + (idx === 0 ? -Math.abs(Math.sin(z) * 4) : Math.abs(Math.cos(z) * 4));
+          const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.32, 2.2, 8), trunkMat);
+          trunk.position.y = 1.1; trunk.castShadow = true; tree.add(trunk);
+          const crown1 = new THREE.Mesh(new THREE.ConeGeometry(1.8, 3.6, 8), leafMat);
+          crown1.position.y = 3.2; crown1.castShadow = true; tree.add(crown1);
+          const crown2 = new THREE.Mesh(new THREE.ConeGeometry(1.3, 2.8, 8), leafMat);
+          crown2.position.y = 4.6; crown2.castShadow = true; tree.add(crown2);
+          tree.position.set(xOff, 0, z);
+          scene.add(tree);
+        });
+      }
+
+      const bowGroup = new THREE.Group();
+      bowGroup.position.set(0.32, 1.48, -0.55);
+      scene.add(bowGroup);
+
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.82, roughness: 0.2 });
+      const crimsonMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.45, metalness: 0.25 });
+      const auraMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+
+      const bowCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, 0.72, 0.22), new THREE.Vector3(0, 0.50, -0.10),
+        new THREE.Vector3(0, 0.16, 0.02), new THREE.Vector3(0, 0, 0.04),
+        new THREE.Vector3(0, -0.16, 0.02), new THREE.Vector3(0, -0.50, -0.10),
+        new THREE.Vector3(0, -0.72, 0.22)
+      ]);
+      const bowMesh = new THREE.Mesh(new THREE.TubeGeometry(bowCurve, 64, 0.024, 14, false), goldMat);
+      bowMesh.castShadow = true;
+      bowGroup.add(bowMesh);
+
+      const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.033, 0.033, 0.22, 14), crimsonMat);
+      grip.position.set(0, 0, 0.036);
+      bowGroup.add(grip);
+
+      [0.72, -0.72].forEach(yPos => {
+        const finial = new THREE.Mesh(new THREE.SphereGeometry(0.034, 12, 12), auraMat);
+        finial.position.set(0, yPos, 0.22);
+        bowGroup.add(finial);
+      });
+
+      const stringGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0.72, 0.22), new THREE.Vector3(0, 0, 0.30), new THREE.Vector3(0, -0.72, 0.22)
+      ]);
+      bowGroup.add(new THREE.Line(stringGeo, new THREE.LineBasicMaterial({ color: 0x7dd3fc })));
+
+      function createArrowMesh() {
+        const g = new THREE.Group();
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.92, 10), new THREE.MeshStandardMaterial({ color: 0xfde047, metalness: 0.45, roughness: 0.25 }));
+        shaft.rotation.x = Math.PI / 2; shaft.castShadow = true; g.add(shaft);
+        const tip = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.1, 10), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.85, roughness: 0.18 }));
+        tip.rotation.x = -Math.PI / 2; tip.position.z = -0.5; g.add(tip);
+        for (let i = 0; i < 3; i++) {
+          const fin = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.006, 0.14), auraMat);
+          fin.position.z = 0.36; fin.rotation.z = (i * Math.PI * 2) / 3; g.add(fin);
+        }
+        return g;
+      }
+
+      const nockedArrow = createArrowMesh();
+      nockedArrow.position.set(0, 0, -0.14);
+      bowGroup.add(nockedArrow);
+
+      const flyingArrowMesh = createArrowMesh();
+      flyingArrowMesh.visible = false;
+      scene.add(flyingArrowMesh);
+
+      const targetGroup = new THREE.Group();
+      scene.add(targetGroup);
+
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 1.9, 12), new THREE.MeshLambertMaterial({ color: 0x78350f }));
+      post.position.set(0, 0.95, 0); post.castShadow = true; targetGroup.add(post);
+
+      const board = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.15, 0.14, 40), new THREE.MeshLambertMaterial({ color: 0xf8fafc }));
+      board.rotation.x = Math.PI / 2; board.position.set(0, 1.5, 0); board.castShadow = true; board.receiveShadow = true; targetGroup.add(board);
+
+      [
+        { r: 0.92, color: 0x38bdf8, z: 0.075 }, { r: 0.69, color: 0xef4444, z: 0.08 },
+        { r: 0.46, color: 0xfacc15, z: 0.085 }, { r: 0.23, color: 0xf59e0b, z: 0.09 }
+      ].forEach(ring => {
+        const disc = new THREE.Mesh(new THREE.CircleGeometry(ring.r, 40), new THREE.MeshBasicMaterial({ color: ring.color }));
+        disc.position.set(0, 1.5, ring.z); targetGroup.add(disc);
+      });
+
+      const flagPole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.4, 8), new THREE.MeshLambertMaterial({ color: 0x94a3b8 }));
+      flagPole.position.set(2.0, 1.2, 0); flagPole.castShadow = true; targetGroup.add(flagPole);
+
+      const windFlag = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.28, 0.03), new THREE.MeshBasicMaterial({ color: 0x22d3ee }));
+      windFlag.position.set(2.38, 2.25, 0); targetGroup.add(windFlag);
+
+      function addRangeMarkers() {
+        for (let dist = 70; dist <= 245; dist += 25) {
+          const canvas = document.createElement('canvas');
+          canvas.width = 256; canvas.height = 128;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(0, 0, 256, 128);
+          ctx.strokeStyle = dist >= 120 ? '#f59e0b' : '#22d3ee';
+          ctx.lineWidth = 8;
+          ctx.strokeRect(6, 6, 244, 116);
+          ctx.fillStyle = dist >= 120 ? '#fde047' : '#67e8f9';
+          ctx.font = 'bold 58px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`${dist}m`, 128, 66);
+
+          const tex = new THREE.CanvasTexture(canvas);
+          const sign = new THREE.Mesh(
+            new THREE.PlaneGeometry(1.1, 0.55),
+            new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide })
+          );
+          sign.position.set(-2.35, 0.55, -dist);
+          sign.rotation.y = 0.35;
+          scene.add(sign);
+
+          const markerPost = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.025, 0.025, 0.6, 8),
+            new THREE.MeshLambertMaterial({ color: 0x64748b })
+          );
+          markerPost.position.set(-2.35, 0.3, -dist);
+          scene.add(markerPost);
+
+          const groundLine = new THREE.Mesh(
+            new THREE.PlaneGeometry(4.4, 0.08),
+            new THREE.MeshBasicMaterial({ color: dist >= 120 ? 0xf59e0b : 0x22d3ee, transparent: true, opacity: 0.45 })
+          );
+          groundLine.rotation.x = -Math.PI / 2;
+          groundLine.position.set(0, 0.015, -dist);
+          scene.add(groundLine);
+        }
+      }
+      addRangeMarkers();
+
+      // --- 1. Ramdhanu 7-Color Rainbow Arrow Trail ---
+      const TRAIL_LEN = 26;
+      const trailPositions = new Float32Array(TRAIL_LEN * 3);
+      const trailColors = new Float32Array(TRAIL_LEN * 3);
+      const rainbowHex = [0xef4444, 0xf97316, 0xfacc15, 0x22c55e, 0x38bdf8, 0x6366f1, 0xd946ef];
+      for (let i = 0; i < TRAIL_LEN; i++) {
+        const c = new THREE.Color(rainbowHex[i % rainbowHex.length]);
+        trailColors[i * 3] = c.r; trailColors[i * 3 + 1] = c.g; trailColors[i * 3 + 2] = c.b;
+      }
+      const trailGeo = new THREE.BufferGeometry();
+      trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+      trailGeo.setAttribute('color', new THREE.BufferAttribute(trailColors, 3));
+      const arrowTrail = new THREE.Line(
+        trailGeo,
+        new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.88 })
+      );
+      arrowTrail.visible = false;
+      scene.add(arrowTrail);
+
+      function resetArrowTrail(x, y, z) {
+        for (let i = 0; i < TRAIL_LEN; i++) {
+          trailPositions[i * 3] = x; trailPositions[i * 3 + 1] = y; trailPositions[i * 3 + 2] = z;
+        }
+        trailGeo.attributes.position.needsUpdate = true;
+        arrowTrail.visible = true;
+      }
+
+      function pushArrowTrail(x, y, z) {
+        for (let i = TRAIL_LEN - 1; i > 0; i--) {
+          trailPositions[i * 3] = trailPositions[(i - 1) * 3];
+          trailPositions[i * 3 + 1] = trailPositions[(i - 1) * 3 + 1];
+          trailPositions[i * 3 + 2] = trailPositions[(i - 1) * 3 + 2];
+        }
+        trailPositions[0] = x; trailPositions[1] = y; trailPositions[2] = z;
+        trailGeo.attributes.position.needsUpdate = true;
+      }
+
+      // --- 2. Animated Wind Gust Particles ---
+      const WIND_COUNT = 48;
+      const windPos = new Float32Array(WIND_COUNT * 3);
+      for (let i = 0; i < WIND_COUNT; i++) {
+        windPos[i * 3] = (Math.random() - 0.5) * 14;
+        windPos[i * 3 + 1] = 0.4 + Math.random() * 4.5;
+        windPos[i * 3 + 2] = -5 - Math.random() * 140;
+      }
+      const windGeo = new THREE.BufferGeometry();
+      windGeo.setAttribute('position', new THREE.BufferAttribute(windPos, 3));
+      const windParticles = new THREE.Points(
+        windGeo,
+        new THREE.PointsMaterial({ color: 0xbae6fd, size: 0.14, transparent: true, opacity: 0.55 })
+      );
+      scene.add(windParticles);
+
+      // --- 3. Floating 3D +pts Impact Popup ---
+      let activePopup = null;
+      function spawn3DPopup(text, colorHex, worldX, worldY, worldZ) {
+        if (activePopup) { scene.remove(activePopup.sprite); activePopup = null; }
+        const c = document.createElement('canvas');
+        c.width = 384; c.height = 128;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.beginPath(); ctx.roundRect(16, 20, 352, 88, 22); ctx.fill();
+        ctx.strokeStyle = colorHex; ctx.lineWidth = 5; ctx.stroke();
+        ctx.fillStyle = colorHex;
+        ctx.font = 'bold 42px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(text, 192, 66);
+        const tex = new THREE.CanvasTexture(c);
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+        sprite.position.set(worldX, worldY + 1.35, worldZ + 0.3);
+        sprite.scale.set(2.4, 0.8, 1);
+        scene.add(sprite);
+        activePopup = { sprite, life: 1.4 };
+      }
+
+      // --- 4. Corner Spectator & Cheer/Inspection Pavilion ---
+      const cheerGroup = new THREE.Group();
+      cheerGroup.position.set(4.2, 0, -11.5);
+      cheerGroup.rotation.y = -0.55;
+      scene.add(cheerGroup);
+
+      // Bleacher deck & canopy
+      const deck = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.35, 2.2), new THREE.MeshLambertMaterial({ color: 0x78350f }));
+      deck.position.set(0, 0.18, 0); deck.receiveShadow = true; cheerGroup.add(deck);
+      const step2 = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.35, 1.1), new THREE.MeshLambertMaterial({ color: 0x92400e }));
+      step2.position.set(0, 0.52, -0.55); cheerGroup.add(step2);
+
+      // Judge inspection desk & banner
+      const desk = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.75, 0.65), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+      desk.position.set(-1.55, 0.72, 0.55); cheerGroup.add(desk);
+
+      const cheerCrew = [];
+      const jerseyColors = [0xf59e0b, 0x38bdf8, 0xef4444, 0x10b981, 0xeab308, 0xa855f7, 0xf97316, 0x06b6d4];
+      for (let i = 0; i < 8; i++) {
+        const person = new THREE.Group();
+        const row = i < 4 ? 0 : 1;
+        const col = i % 4;
+        person.position.set(-1.5 + col * 1.05, row === 0 ? 0.36 : 0.70, row === 0 ? 0.35 : -0.45);
+
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.17, 0.55, 10), new THREE.MeshLambertMaterial({ color: jerseyColors[i] }));
+        body.position.y = 0.28; person.add(body);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 12), new THREE.MeshLambertMaterial({ color: 0xfde68a }));
+        head.position.y = 0.68; person.add(head);
+
+        const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.34, 0.07), new THREE.MeshLambertMaterial({ color: jerseyColors[i] }));
+        leftArm.position.set(-0.2, 0.55, 0);
+        const pomL = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 8), new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0xfacc15 : 0x22d3ee }));
+        pomL.position.y = 0.2; leftArm.add(pomL);
+        person.add(leftArm);
+
+        const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.34, 0.07), new THREE.MeshLambertMaterial({ color: jerseyColors[i] }));
+        rightArm.position.set(0.2, 0.55, 0);
+        const pomR = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 8), new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0x22d3ee : 0xfacc15 }));
+        pomR.position.y = 0.2; rightArm.add(pomR);
+        person.add(rightArm);
+
+        cheerGroup.add(person);
+        cheerCrew.push({ person, leftArm, rightArm, baseY: person.position.y, phase: i * 0.75 });
+      }
+      let cheerBoostTimer = 0;
+
+      function triggerHaptic(ms, weak, strong) {
+        try {
+          if (navigator.vibrate) navigator.vibrate(ms);
+          const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+          for (const gp of pads) {
+            if (gp && gp.vibrationActuator) {
+              gp.vibrationActuator.playEffect('dual-rumble', { duration: ms, weakMagnitude: weak, strongMagnitude: strong });
+            }
+          }
+        } catch (e) {}
+      }
+
+      const stuckArrows = [];
+      function stickArrowOnTarget(hitX, hitY) {
+        const stuck = flyingArrowMesh.clone();
+        stuck.visible = true;
+        stuck.position.set(hitX, hitY, 0.60);
+        stuck.quaternion.copy(flyingArrowMesh.quaternion);
+        targetGroup.add(stuck);
+        stuckArrows.push(stuck);
+      }
+      function clearStuckArrows() {
+        while (stuckArrows.length) {
+          targetGroup.remove(stuckArrows.pop());
+        }
+      }
+
+      function positionTarget() {
+        targetGroup.position.set(0, 0, -state.distance);
+        windFlag.rotation.y = state.wind >= 0 ? 0 : Math.PI;
+        windFlag.scale.x = Math.max(0.35, Math.min(1.6, Math.abs(state.wind) / 2.2));
+      }
+
+      function initAudio() {
+        if (!state.audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) state.audioCtx = new AC();
+        }
+        if (state.audioCtx && state.audioCtx.state === 'suspended') state.audioCtx.resume();
+      }
+
+      function playTone(freq, dur, type, gainVal) {
+        if (state.muted) return;
+        initAudio();
+        if (!state.audioCtx) return;
+        const osc = state.audioCtx.createOscillator(), gain = state.audioCtx.createGain();
+        osc.type = type || 'sine';
+        osc.frequency.setValueAtTime(freq, state.audioCtx.currentTime);
+        gain.gain.setValueAtTime(gainVal || 0.12, state.audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, state.audioCtx.currentTime + dur);
+        osc.connect(gain); gain.connect(state.audioCtx.destination);
+        osc.start(); osc.stop(state.audioCtx.currentTime + dur);
+      }
+
+      function weightMult(w) { return 1 + ((w - 1) / 24) * 0.5; }
+      function launchSpeed(w) { return Math.sqrt((2 * 45) / ((w + 12) / 1000)); }
+
+      function drawInset() {
+        const w = insetCanvas.width, h = insetCanvas.height, cx = w / 2, cy = h / 2;
+        insetCtx.clearRect(0, 0, w, h);
+        [
+          { r: 52, color: '#f8fafc' }, { r: 41, color: '#38bdf8' },
+          { r: 31, color: '#ef4444' }, { r: 21, color: '#facc15' }, { r: 10, color: '#f59e0b' }
+        ].forEach(ring => {
+          insetCtx.beginPath(); insetCtx.arc(cx, cy, ring.r, 0, Math.PI * 2);
+          insetCtx.fillStyle = ring.color; insetCtx.fill();
+          insetCtx.strokeStyle = '#0f172a'; insetCtx.lineWidth = 1; insetCtx.stroke();
+        });
+        state.hits.forEach(hit => {
+          const hx = cx + Math.max(-52, Math.min(52, hit.dxMm * 10));
+          const hy = cy + Math.max(-52, Math.min(52, hit.dyMm * 10));
+          insetCtx.fillStyle = '#0f172a'; insetCtx.beginPath(); insetCtx.arc(hx, hy, 3.5, 0, Math.PI * 2); insetCtx.fill();
+          insetCtx.strokeStyle = '#ffffff'; insetCtx.lineWidth = 1; insetCtx.stroke();
+        });
+      }
+
+      function updateUI() {
+        document.getElementById('hud-score').textContent = state.score.toLocaleString();
+        document.getElementById('hud-best').textContent = state.best.toLocaleString();
+        document.getElementById('hud-round').textContent = state.shotNum <= state.maxShots ? `Arrow ${state.shotNum} / ${state.maxShots}` : 'Round Complete';
+        document.getElementById('val-dist').textContent = `${state.distance} m`;
+        document.getElementById('val-wind').textContent = `${state.wind >= 0 ? '+' : ''}${state.wind.toFixed(1)} m/s`;
+        document.getElementById('lbl-weight').textContent = `${state.weight} g`;
+        document.getElementById('lbl-dist').textContent = `${state.distance} m`;
+        document.getElementById('lbl-elev').textContent = `+${state.elevDeg.toFixed(1)}°`;
+        document.getElementById('lbl-yaw').textContent = `${state.yawDeg >= 0 ? '+' : ''}${state.yawDeg.toFixed(1)}°`;
+        document.getElementById('ref-dist').textContent = state.distance;
+
+        const wm = weightMult(state.weight), speed = Math.round(launchSpeed(state.weight));
+        const desc = state.weight <= 7 ? 'Fast, wind-sensitive' : (state.weight >= 16 ? 'Heavy, cuts wind' : 'Balanced flight');
+        document.getElementById('weight-note').textContent = `${desc} · ${speed} m/s · ${wm.toFixed(2)}× score`;
+
+        document.getElementById('ring-2').textContent = `${Math.round(10 * state.distance * wm).toLocaleString()} pts`;
+        document.getElementById('ring-4').textContent = `${Math.round(7.5 * state.distance * wm).toLocaleString()} pts`;
+        document.getElementById('ring-6').textContent = `${Math.round(5.0 * state.distance * wm).toLocaleString()} pts`;
+        document.getElementById('ring-8').textContent = `${Math.round(2.5 * state.distance * wm).toLocaleString()} pts`;
+        document.getElementById('ring-10').textContent = `${Math.round(1.0 * state.distance * wm).toLocaleString()} pts`;
+
+        const pitch = (state.elevDeg * Math.PI) / 180, yaw = (-state.yawDeg * Math.PI) / 180;
+        bowGroup.rotation.set(pitch * 0.6, yaw, 0);
+        if (!state.flying && state.followTimer <= 0) {
+          camera.position.set(0, 1.62, 0.25);
+          camera.rotation.set(pitch * 0.45, yaw, 0);
+        }
+        positionTarget(); drawInset();
+      }
+
+      function playBowTwang(chargeVal) {
+        if (state.muted) return;
+        initAudio();
+        if (!state.audioCtx) return;
+        const now = state.audioCtx.currentTime;
+        const c = Math.max(0.3, Math.min(1.0, chargeVal || 0.85));
+        const baseFreq = 132 + c * 34;
+        [1, 2.02].forEach((harm, idx) => {
+          const osc = state.audioCtx.createOscillator();
+          const gain = state.audioCtx.createGain();
+          osc.type = idx === 0 ? 'triangle' : 'sine';
+          osc.frequency.setValueAtTime(baseFreq * harm * 1.18, now);
+          osc.frequency.exponentialRampToValueAtTime(baseFreq * harm, now + 0.07);
+          osc.frequency.exponentialRampToValueAtTime(baseFreq * harm * 0.94, now + 0.34);
+          const peak = (idx === 0 ? 0.16 : 0.07) * (0.7 + c * 0.3);
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(peak, now + 0.012);
+          gain.gain.exponentialRampToValueAtTime(0.0008, now + (idx === 0 ? 0.36 : 0.24));
+          osc.connect(gain);
+          gain.connect(state.audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.38);
+        });
+      }
+
+      function shoot() {
+        if (state.flying) return;
+        if (state.shotNum > state.maxShots) { resetRound(); return; }
+        initAudio(); playBowTwang(state.drawCharge || 0.85);
+
+        const v0 = launchSpeed(state.weight), pitch = (state.elevDeg * Math.PI) / 180, yaw = (-state.yawDeg * Math.PI) / 180;
+        state.flying = true; nockedArrow.visible = false; flyingArrowMesh.visible = true;
+
+        const horiz = v0 * Math.cos(pitch);
+        state.arrowPhys = { x: 0, y: 1.5, z: -0.5, vx: -horiz * Math.sin(yaw), vy: v0 * Math.sin(pitch), vz: -horiz * Math.cos(yaw), t: 0 }; resetArrowTrail(0, 1.5, -0.5); triggerHaptic(45, 0.3, 0.5);
+      }
+
+      function resolveHit(hitX, hitY, flightTime, drop_m) {
+        state.flying = false; state.followTimer = 1.1;
+        const missY = hitY - 1.5, radialM = Math.sqrt(hitX * hitX + missY * missY), diaMm = radialM * 20, wm = weightMult(state.weight);
+        let ringLabel = 'Miss', mult = 0;
+        if (radialM <= 0.23) { ringLabel = 'Bullseye (Gold)!'; mult = 10.0; }
+        else if (radialM <= 0.46) { ringLabel = 'Inner Yellow Ring'; mult = 7.5; }
+        else if (radialM <= 0.69) { ringLabel = 'Mid Red Ring'; mult = 5.0; }
+        else if (radialM <= 0.92) { ringLabel = 'Outer Blue Ring'; mult = 2.5; }
+        else if (radialM <= 1.15) { ringLabel = 'Outer White Ring'; mult = 1.0; }
+
+        const pts = Math.round(mult * state.distance * wm);
+        state.score += pts;
+        if (state.score > state.best) { state.best = state.score; try { localStorage.setItem('ramdhanu_best', String(state.best)); } catch (e) {} }
+
+        state.hits.push({ dxMm: (hitX / 1.15) * 5.2, dyMm: (-missY / 1.15) * 5.2, pts });
+        document.getElementById('val-drop').textContent = `${drop_m.toFixed(2)} m`;
+        const banner = document.getElementById('shot-banner');
+        banner.classList.remove('hidden');
+        banner.innerHTML = `<span class="font-bold text-amber-300">${ringLabel}</span> · +${pts} pts · Time: <b>${flightTime.toFixed(2)}s</b> · Drop: <b>${drop_m.toFixed(2)}m</b>`;
+
+        playTone(pts > 0 ? (diaMm <= 2 ? 880 : 520) : 140, 0.22, pts > 0 ? 'sine' : 'sawtooth', pts > 0 ? 0.16 : 0.08);
+        if (pts > 0) {
+          state.totalHits = (state.totalHits || 0) + 1;
+          if (state.totalHits % 5 === 0) {
+            state.distance += 25;
+            const distSlider = document.getElementById('in-dist');
+            if (distSlider) {
+              if (Number(distSlider.max) < state.distance) distSlider.max = String(state.distance);
+              distSlider.value = String(state.distance);
+            }
+            banner.innerHTML += ` · <span class="text-cyan-300 font-bold">5 Hits! Range +25m ? ${state.distance}m</span>`;
+          }
+        }
+        state.shotNum += 1;
+        const maxWind = state.distance >= 120 ? 3.4 : 4.5; state.wind = Math.max(-maxWind, Math.min(maxWind, state.wind + (Math.random() - 0.5) * 1.1));
+        updateUI();
+      }
+
+      function resetRound() {
+        const curStage = Math.max(1, Math.floor((state.distance - (state.startDistance || 70)) / 25) + 1);
+        saveTournamentScore(state.score, curStage, state.distance);
+        clearStuckArrows();
+        state.score = 0; state.shotNum = 1; state.hits = []; state.totalHits = 0; state.stageHits = 0; state.distance = state.startDistance || 70; state.flying = false; state.followTimer = 0;
+        const distSlider = document.getElementById('in-dist');
+        if (distSlider) distSlider.value = String(state.distance);
+        nockedArrow.visible = true; flyingArrowMesh.visible = false;
+        document.getElementById('val-drop').textContent = '—';
+        document.getElementById('shot-banner').classList.add('hidden');
+        updateUI();
+      }
+
+      function resize() {
+        const rect = stageWrap.getBoundingClientRect(), w = Math.max(320, rect.width), h = Math.max(300, rect.height);
+        camera.aspect = w / h; camera.updateProjectionMatrix();
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.12; renderer.setSize(w, h);
+      }
+
+      let lastTs = 0;
+      const keysHeld = {};
+      window.addEventListener('keydown', e => {
+        if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+        keysHeld[e.code] = true;
+        if (e.code === 'Space' && !state.flying && state.followTimer <= 0) state.dragging = true;
+        if (e.code === 'KeyR') resetRound();
+      });
+      window.addEventListener('keyup', e => {
+        keysHeld[e.code] = false;
+        if (e.code === 'Space' && state.dragging) { state.dragging = false; shoot(); }
+      });
+
+      let gpDrawHeld = false;
+      function pollInputs(dt) {
+        if (state.flying || state.followTimer > 0) return;
+        let dElev = 0, dYaw = 0;
+        if (keysHeld['KeyW'] || keysHeld['ArrowUp']) dElev += 7.5 * dt;
+        if (keysHeld['KeyS'] || keysHeld['ArrowDown']) dElev -= 7.5 * dt;
+        if (keysHeld['KeyA'] || keysHeld['ArrowLeft']) dYaw -= 4.5 * dt;
+        if (keysHeld['KeyD'] || keysHeld['ArrowRight']) dYaw += 4.5 * dt;
+
+        const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+        const gp = pads && (pads[0] || pads[1] || pads[2] || pads[3]);
+        if (gp) {
+          const lx = Math.abs(gp.axes[0] || 0) > 0.14 ? gp.axes[0] : 0;
+          const ly = Math.abs(gp.axes[1] || 0) > 0.14 ? gp.axes[1] : 0;
+          dYaw += lx * 5.0 * dt;
+          dElev -= ly * 8.0 * dt;
+          if (gp.buttons[12]?.pressed) dElev += 7.0 * dt;
+          if (gp.buttons[13]?.pressed) dElev -= 7.0 * dt;
+          if (gp.buttons[14]?.pressed) dYaw -= 4.5 * dt;
+          if (gp.buttons[15]?.pressed) dYaw += 4.5 * dt;
+          const fireDown = Boolean(gp.buttons[0]?.pressed || gp.buttons[7]?.pressed);
+          if (fireDown && !gpDrawHeld) { gpDrawHeld = true; state.dragging = true; }
+          else if (!fireDown && gpDrawHeld) { gpDrawHeld = false; state.dragging = false; shoot(); }
+        }
+
+        if (dElev !== 0 || dYaw !== 0) {
+          state.elevDeg = Math.round(Math.max(0.5, Math.min(28.0, state.elevDeg + dElev)) * 10) / 10;
+          state.yawDeg = Math.round(Math.max(-5.0, Math.min(5.0, state.yawDeg + dYaw)) * 10) / 10;
+          document.getElementById('in-elev').value = state.elevDeg;
+          document.getElementById('in-yaw').value = state.yawDeg;
+          updateUI();
+        }
+      }
+
+      function animate(ts) {
+        const rawDt = Math.min(0.033, (ts - (lastTs || ts)) / 1000); lastTs = ts;
+        pollInputs(rawDt);
+
+        // Wind gust particles drift
+        const wAttr = windGeo.attributes.position;
+        for (let i = 0; i < WIND_COUNT; i++) {
+          let wx = wAttr.getX(i) + state.wind * rawDt * 2.4;
+          if (wx > 7) wx = -7; else if (wx < -7) wx = 7;
+          wAttr.setX(i, wx);
+        }
+        wAttr.needsUpdate = true;
+
+        // Floating 3D +pts popup rise & fade
+        if (activePopup) {
+          activePopup.life -= rawDt;
+          activePopup.sprite.position.y += rawDt * 0.75;
+          activePopup.sprite.material.opacity = Math.max(0, Math.min(1, activePopup.life));
+          if (activePopup.life <= 0) { scene.remove(activePopup.sprite); activePopup = null; }
+        }
+
+        // Corner spectator & cheerleader wave/jump animation
+        if (cheerBoostTimer > 0) cheerBoostTimer -= rawDt;
+        const boost = cheerBoostTimer > 0 ? 1 : 0;
+        for (const c of cheerCrew) {
+          const spd = boost ? 11.0 : 2.8;
+          const wave = Math.sin(ts * 0.001 * spd + c.phase);
+          c.person.position.y = c.baseY + (boost ? Math.abs(wave) * 0.24 : Math.max(0, wave) * 0.03);
+          c.leftArm.rotation.z = 0.4 + wave * (boost ? 0.95 : 0.25);
+          c.rightArm.rotation.z = -0.4 - wave * (boost ? 0.95 : 0.25);
+        }
+
+        // Slow-motion bullseye cam when arrow nears target on target line
+        let timeScale = 1.0;
+        if (state.flying && state.arrowPhys) {
+          const distToTarget = state.arrowPhys.z - (-state.distance);
+          const nearBullseye = Math.hypot(state.arrowPhys.x - targetGroup.position.x, state.arrowPhys.y - 1.5) <= 0.65;
+          if (distToTarget > 0 && distToTarget < 9.0 && nearBullseye) timeScale = 0.32;
+        }
+        const dt = rawDt * timeScale;
+
+        if (state.flying && state.arrowPhys) {
+          const steps = 4, subDt = dt / steps;
+          for (let i = 0; i < steps; i++) {
+            const a = state.arrowPhys; a.t += subDt; a.vy -= 9.81 * subDt;
+            a.vx += (state.wind * subDt * 0.92) / (Math.max(2.2, Math.sqrt(state.weight)) * (1 + a.t * 0.42));
+            const prevX = a.x, prevY = a.y, prevZ = a.z;
+            a.x += a.vx * subDt; a.y += a.vy * subDt; a.z += a.vz * subDt;
+            const targetFaceZ = -state.distance + 0.09;
+            const prevTipZ = prevZ - 0.55, currTipZ = a.z - 0.55;
+            if (prevTipZ >= targetFaceZ && currTipZ <= targetFaceZ) {
+              const frac = (prevTipZ - targetFaceZ) / Math.max(1e-6, prevTipZ - currTipZ);
+              const hitX = prevX + (a.x - prevX) * frac;
+              const hitY = prevY + (a.y - prevY) * frac;
+              a.x = hitX; a.y = hitY; a.z = targetFaceZ + 0.51; flyingArrowMesh.position.set(a.x, a.y, a.z); flyingArrowMesh.lookAt(new THREE.Vector3(a.x + a.vx, a.y + a.vy, a.z + a.vz)); resolveHit(hitX, hitY, a.t, 0.5 * 9.81 * a.t * a.t);
+              break;
+            }
+            if (a.y <= 0) { resolveHit(a.x, 0, a.t, 0.5 * 9.81 * a.t * a.t); break; }
+          }
+          if (state.arrowPhys) {
+            const a = state.arrowPhys;
+            pushArrowTrail(a.x, a.y, a.z);
+            flyingArrowMesh.position.set(a.x, a.y, a.z);
+            flyingArrowMesh.lookAt(new THREE.Vector3(a.x + a.vx, a.y + a.vy, a.z + a.vz));
+            const zoomBack = timeScale < 1 ? 2.1 : 3.2;
+            camera.position.set(a.x * 0.72, Math.max(0.8, a.y + 0.32), a.z + zoomBack);
+            camera.lookAt(a.x, a.y, a.z - 4);
+          }
+        } else if (state.followTimer > 0) {
+          state.followTimer -= dt;
+          if (state.followTimer <= 0) { nockedArrow.visible = true; flyingArrowMesh.visible = false; arrowTrail.visible = false; updateUI(); }
+        }
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+      }
+
+      const dom = renderer.domElement;
+      dom.addEventListener('pointerdown', e => {
+        if (state.flying || state.followTimer > 0) return;
+        state.dragging = true; state.dragStart = { x: e.clientX, y: e.clientY, elev: state.elevDeg, yaw: state.yawDeg };
+        dom.setPointerCapture(e.pointerId);
+      });
+      dom.addEventListener('pointermove', e => {
+        if (!state.dragging || !state.dragStart) return;
+        state.elevDeg = Math.round(Math.max(0.5, Math.min(28.0, state.dragStart.elev + (e.clientY - state.dragStart.y) * 0.05)) * 10) / 10;
+        state.yawDeg = Math.round(Math.max(-5.0, Math.min(5.0, state.dragStart.yaw + (e.clientX - state.dragStart.x) * 0.03)) * 10) / 10;
+        document.getElementById('in-elev').value = state.elevDeg;
+        document.getElementById('in-yaw').value = state.yawDeg;
+        updateUI();
+      });
+      dom.addEventListener('pointerup', () => { if (state.dragging) { state.dragging = false; shoot(); } });
+
+      document.getElementById('in-weight').addEventListener('input', e => { state.weight = parseInt(e.target.value, 10); updateUI(); });
+      document.getElementById('in-dist').addEventListener('input', e => { state.distance = parseInt(e.target.value, 10); updateUI(); });
+      document.getElementById('in-elev').addEventListener('input', e => { state.elevDeg = parseFloat(e.target.value); updateUI(); });
+      document.getElementById('in-yaw').addEventListener('input', e => { state.yawDeg = parseFloat(e.target.value); updateUI(); });
+      document.querySelectorAll('.preset-w').forEach(btn => btn.addEventListener('click', () => {
+        state.weight = parseInt(btn.dataset.w, 10); document.getElementById('in-weight').value = state.weight; updateUI();
+      }));
+
+      document.getElementById('btn-shoot').addEventListener('click', shoot);
+      document.getElementById('btn-reset').addEventListener('click', resetRound);
+      document.getElementById('btn-mute').addEventListener('click', e => { state.muted = !state.muted; e.target.textContent = state.muted ? 'Sound: OFF' : 'Sound: ON'; });
+      document.getElementById('btn-leaderboard')?.addEventListener('click', () => { renderLeaderboard(); document.getElementById('leaderboard-modal')?.classList.remove('hidden'); });
+      document.getElementById('btn-close-lb')?.addEventListener('click', () => { document.getElementById('leaderboard-modal')?.classList.add('hidden'); });
+      document.getElementById('leaderboard-modal')?.addEventListener('click', e => { if (e.target.id === 'leaderboard-modal') e.target.classList.add('hidden'); });
+
+      window.addEventListener('resize', resize);
+      window.onload = () => { resize(); updateUI(); requestAnimationFrame(animate); };
+    })();
+  </script>
+</body>
+</html>
