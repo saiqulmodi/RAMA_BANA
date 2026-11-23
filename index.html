@@ -746,6 +746,8 @@
         state.wind = Math.max(-4.5, Math.min(4.5, state.wind));
         resetShotAim();
         banner.innerHTML += ' · <span class="text-cyan-300 font-semibold">Sights reset — re-aim for next shot!</span>';
+        resetShotAim();
+        banner.innerHTML += ' · <span class="text-cyan-300 font-semibold">Sights reset — re-aim for next shot!</span>';
 
         if (state.stageHits >= 5) {
           while (stuckGroup.children.length) stuckGroup.remove(stuckGroup.children[0]);
@@ -836,6 +838,19 @@
         if (inEl) inEl.value = state.elevDeg.toFixed(3);
         if (inYw) inYw.value = state.yawDeg.toFixed(3);
       }
+      let shotAimAdjusted = true;
+      function resetShotAim() {
+        const baseEl = GAME_MODE === 'pistol' ? 1.400 : 6.500;
+        const driftEl = (Math.random() - 0.5) * 0.48;
+        const driftYw = (Math.random() - 0.5) * 0.44;
+        state.elevDeg = snap002(baseEl + driftEl, -5, 26);
+        state.yawDeg = snap002(driftYw, -6, 6);
+        shotAimAdjusted = false;
+        const inEl = document.getElementById('in-elev');
+        const inYw = document.getElementById('in-yaw');
+        if (inEl) inEl.value = state.elevDeg.toFixed(3);
+        if (inYw) inYw.value = state.yawDeg.toFixed(3);
+      }
 
       document.querySelectorAll('[data-adj]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -843,12 +858,12 @@
           const delta = Number(btn.getAttribute('data-delta'));
           if (axis === 'elev') {
             state.elevDeg = snap002(state.elevDeg + delta, -5, 26);
-            shotAimAdjusted = true; document.getElementById('in-elev').value = state.elevDeg.toFixed(3);
+            shotAimAdjusted = true; shotAimAdjusted = true; document.getElementById('in-elev').value = state.elevDeg.toFixed(3);
           } else {
             state.yawDeg = snap002(state.yawDeg + delta, -6, 6);
             document.getElementById('in-yaw').value = state.yawDeg.toFixed(3);
           }
-          shotAimAdjusted = true; playTone(980, 0.025, 'sine', 0.06);
+          shotAimAdjusted = true; shotAimAdjusted = true; playTone(980, 0.025, 'sine', 0.06);
           updateUI();
         });
       });
@@ -859,7 +874,7 @@
         const sens = state.scoped ? 0.002 : 0.036;
         state.elevDeg = snap002(dragStart.el - (e.clientY - dragStart.y) * sens, -5, 26);
         state.yawDeg = snap002(dragStart.yw + (e.clientX - dragStart.x) * sens, -6, 6);
-        shotAimAdjusted = true; document.getElementById('in-elev').value = state.elevDeg.toFixed(3);
+        shotAimAdjusted = true; shotAimAdjusted = true; document.getElementById('in-elev').value = state.elevDeg.toFixed(3);
         document.getElementById('in-yaw').value = state.yawDeg.toFixed(3);
         updateUI();
       });
@@ -883,7 +898,7 @@
         const sens = state.scoped ? 0.002 : 0.040;
         state.elevDeg = snap002(tStart.el - (e.clientY - tStart.y) * sens, -5, 26);
         state.yawDeg = snap002(tStart.yw + (e.clientX - tStart.x) * sens, -6, 6);
-        shotAimAdjusted = true; document.getElementById('in-elev').value = state.elevDeg.toFixed(3);
+        shotAimAdjusted = true; shotAimAdjusted = true; document.getElementById('in-elev').value = state.elevDeg.toFixed(3);
         document.getElementById('in-yaw').value = state.yawDeg.toFixed(3);
         updateUI();
       });
@@ -995,7 +1010,7 @@
       document.getElementById('btn-reset').addEventListener('click', () => {
         while (stuckGroup.children.length) stuckGroup.remove(stuckGroup.children[0]);
         state.score = 0; state.shotNum = 1; state.stageHits = 0; state.totalHits = 0;
-        state.baseMaxShots = 5; state.maxShots = 5; state.mulliganUsed = false; state.distance = state.startDistance; resetShotAim();
+        state.baseMaxShots = 5; state.maxShots = 5; state.mulliganUsed = false; state.distance = state.startDistance; resetShotAim(); resetShotAim();
         updateUI();
       });
 
@@ -1014,8 +1029,8 @@
 
         // Keyboard fine aim (auto-scales to 0.002° precision ticks when 3.5x Scope is held)
         const kRate = state.scoped ? 0.12 : 3.6;
-        if (keys['KeyW'] || keys['ArrowUp']) { state.elevDeg = snap002(state.elevDeg + kRate * dt, -5, 26); shotAimAdjusted = true; document.getElementById('in-elev').value = state.elevDeg.toFixed(3); updateUI(); }
-        if (keys['KeyS'] || keys['ArrowDown']) { state.elevDeg = snap002(state.elevDeg - kRate * dt, -5, 26); shotAimAdjusted = true; document.getElementById('in-elev').value = state.elevDeg.toFixed(3); updateUI(); }
+        if (keys['KeyW'] || keys['ArrowUp']) { state.elevDeg = snap002(state.elevDeg + kRate * dt, -5, 26); shotAimAdjusted = true; shotAimAdjusted = true; document.getElementById('in-elev').value = state.elevDeg.toFixed(3); updateUI(); }
+        if (keys['KeyS'] || keys['ArrowDown']) { state.elevDeg = snap002(state.elevDeg - kRate * dt, -5, 26); shotAimAdjusted = true; shotAimAdjusted = true; document.getElementById('in-elev').value = state.elevDeg.toFixed(3); updateUI(); }
         if (keys['KeyA'] || keys['ArrowLeft']) { state.yawDeg = snap002(state.yawDeg - kRate * dt, -6, 6); document.getElementById('in-yaw').value = state.yawDeg.toFixed(3); updateUI(); }
         if (keys['KeyD'] || keys['ArrowRight']) { state.yawDeg = snap002(state.yawDeg + kRate * dt, -6, 6); document.getElementById('in-yaw').value = state.yawDeg.toFixed(3); updateUI(); }
 
