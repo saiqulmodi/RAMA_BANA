@@ -591,58 +591,141 @@
           t.badge.material.needsUpdate = true;
         });
       }
-      // --- 3D Player Weapon (Bow vs Match Pistol) ---
+      // --- 3D Player Weapon angled at 22 deg for clear silhouette & profile ---
       const weaponGroup = new THREE.Group();
-      weaponGroup.position.set(0.26, 1.42, -0.44);
+      weaponGroup.position.set(0.36, 1.36, -0.62);
+      weaponGroup.rotation.set(0.06, -0.38, 0.18); // ~22 deg oblique angle so full bow/pistol profile is clearly visible
       scene.add(weaponGroup);
 
-      let bowLimbMesh = null, bowStringLine = null, pistolSlideMesh = null, muzzleFlashMesh = null;
+      let bowLimbMesh = null, bowStringLine = null, nockedArrowGroup = null, pistolSlideMesh = null, muzzleFlashMesh = null;
       const weaponAura = new THREE.Mesh(
-        new THREE.TorusGeometry(0.42, 0.008, 8, 40),
-        new THREE.MeshBasicMaterial({ color: 0xe879f9, transparent: true, opacity: 0.38 })
+        new THREE.TorusGeometry(0.46, 0.009, 10, 48),
+        new THREE.MeshBasicMaterial({ color: 0xe879f9, transparent: true, opacity: 0.42 })
       );
       weaponAura.visible = false;
       weaponGroup.add(weaponAura);
 
       if (GAME_MODE === 'pistol') {
-        const grip = new THREE.Mesh(new THREE.BoxGeometry(0.036, 0.13, 0.055), new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.7 }));
-        grip.position.set(0, -0.065, 0.045); grip.rotation.x = 0.24;
-        const frame = new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.026, 0.24), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.25 }));
-        frame.position.set(0, 0.005, -0.04);
-        pistolSlideMesh = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.036, 0.25), new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9, roughness: 0.18 }));
-        pistolSlideMesh.position.set(0, 0.034, -0.042);
+        // Ergonomic Grip + Trigger Guard + Frame + Vented Blowback Slide + Holographic Red-Dot Optic
+        const grip = new THREE.Mesh(
+          new THREE.BoxGeometry(0.042, 0.15, 0.065),
+          new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.72 })
+        );
+        grip.position.set(0, -0.075, 0.055);
+        grip.rotation.x = 0.26;
 
-        const opticHood = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.022, 0.044), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 }));
-        opticHood.position.set(0, 0.028, 0.018);
-        const redDot = new THREE.Mesh(new THREE.SphereGeometry(0.0028, 8, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
-        redDot.position.set(0, 0.029, 0.018);
-        pistolSlideMesh.add(opticHood, redDot);
+        const guardBottom = new THREE.Mesh(
+          new THREE.BoxGeometry(0.016, 0.012, 0.065),
+          new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.25 })
+        );
+        guardBottom.position.set(0, -0.042, -0.005);
 
-        muzzleFlashMesh = new THREE.Mesh(new THREE.ConeGeometry(0.048, 0.15, 10), new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.92 }));
+        const trigger = new THREE.Mesh(
+          new THREE.BoxGeometry(0.008, 0.028, 0.012),
+          new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.9, roughness: 0.2 })
+        );
+        trigger.position.set(0, -0.022, 0.005);
+        trigger.rotation.x = -0.25;
+
+        const frame = new THREE.Mesh(
+          new THREE.BoxGeometry(0.038, 0.028, 0.29),
+          new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.85, roughness: 0.25 })
+        );
+        frame.position.set(0, 0.004, -0.055);
+
+        const barrel = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.012, 0.012, 0.31, 14),
+          new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.95, roughness: 0.15 })
+        );
+        barrel.rotation.x = Math.PI / 2;
+        barrel.position.set(0, 0.036, -0.075);
+
+        pistolSlideMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(0.044, 0.042, 0.28),
+          new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.88, roughness: 0.2 })
+        );
+        pistolSlideMesh.position.set(0, 0.036, -0.052);
+
+        const frontSight = new THREE.Mesh(
+          new THREE.BoxGeometry(0.008, 0.014, 0.016),
+          new THREE.MeshBasicMaterial({ color: 0x22c55e })
+        );
+        frontSight.position.set(0, 0.026, -0.125);
+
+        const opticHood = new THREE.Mesh(
+          new THREE.BoxGeometry(0.038, 0.026, 0.052),
+          new THREE.MeshStandardMaterial({ color: 0x090d16, metalness: 0.9, roughness: 0.2 })
+        );
+        opticHood.position.set(0, 0.032, 0.022);
+
+        const redDot = new THREE.Mesh(
+          new THREE.SphereGeometry(0.0038, 10, 10),
+          new THREE.MeshBasicMaterial({ color: 0xef4444 })
+        );
+        redDot.position.set(0, 0.033, 0.022);
+        pistolSlideMesh.add(frontSight, opticHood, redDot);
+
+        muzzleFlashMesh = new THREE.Mesh(
+          new THREE.ConeGeometry(0.055, 0.18, 12),
+          new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.95 })
+        );
         muzzleFlashMesh.rotation.x = -Math.PI / 2;
-        muzzleFlashMesh.position.set(0, 0.034, -0.23);
+        muzzleFlashMesh.position.set(0, 0.036, -0.28);
         muzzleFlashMesh.visible = false;
 
-        weaponGroup.add(grip, frame, pistolSlideMesh, muzzleFlashMesh);
+        weaponGroup.add(grip, guardBottom, trigger, frame, barrel, pistolSlideMesh, muzzleFlashMesh);
       } else {
+        // Sculpted Recurve Bow: Riser Handle + Dual Curved Limbs + String + Nocked Fletched Arrow
         const curve = new THREE.CatmullRomCurve3([
-          new THREE.Vector3(0, -0.75, 0.22),
-          new THREE.Vector3(0, -0.35, -0.06),
-          new THREE.Vector3(0, 0, -0.14),
-          new THREE.Vector3(0, 0.35, -0.06),
-          new THREE.Vector3(0, 0.75, 0.22)
+          new THREE.Vector3(0, -0.78, 0.26),
+          new THREE.Vector3(0, -0.46, 0.02),
+          new THREE.Vector3(0, -0.18, -0.14),
+          new THREE.Vector3(0, 0, -0.17),
+          new THREE.Vector3(0, 0.18, -0.14),
+          new THREE.Vector3(0, 0.46, 0.02),
+          new THREE.Vector3(0, 0.78, 0.26)
         ]);
         bowLimbMesh = new THREE.Mesh(
-          new THREE.TubeGeometry(curve, 32, 0.022, 10, false),
-          new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.45, roughness: 0.35 })
+          new THREE.TubeGeometry(curve, 40, 0.022, 12, false),
+          new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.45, roughness: 0.32 })
         );
+
+        const riserGrip = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.028, 0.032, 0.28, 12),
+          new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.65 })
+        );
+        riserGrip.position.set(0, 0, -0.165);
+
         const sGeo = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(0, 0.75, 0.22),
-          new THREE.Vector3(0, 0, 0.22),
-          new THREE.Vector3(0, -0.75, 0.22)
+          new THREE.Vector3(0, 0.78, 0.26),
+          new THREE.Vector3(0, 0, 0.26),
+          new THREE.Vector3(0, -0.78, 0.26)
         ]);
         bowStringLine = new THREE.Line(sGeo, new THREE.LineBasicMaterial({ color: 0x7dd3fc }));
-        weaponGroup.add(bowLimbMesh, bowStringLine);
+
+        // Nocked Arrow resting on bow shelf so player clearly sees arrow + feathers + broadhead
+        nockedArrowGroup = new THREE.Group();
+        const aShaft = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.006, 0.006, 0.86, 8),
+          new THREE.MeshStandardMaterial({ color: 0xfde047, metalness: 0.3, roughness: 0.4 })
+        );
+        aShaft.rotation.x = Math.PI / 2;
+        aShaft.position.z = -0.17;
+
+        const aTip = new THREE.Mesh(
+          new THREE.ConeGeometry(0.016, 0.065, 8),
+          new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.2 })
+        );
+        aTip.rotation.x = -Math.PI / 2;
+        aTip.position.z = -0.62;
+
+        const fletch1 = new THREE.Mesh(new THREE.BoxGeometry(0.002, 0.028, 0.09), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+        fletch1.position.set(0, 0.014, 0.20);
+        const fletch2 = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.002, 0.09), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+        fletch2.position.set(0.014, 0, 0.20);
+
+        nockedArrowGroup.add(aShaft, aTip, fletch1, fletch2);
+        weaponGroup.add(bowLimbMesh, riserGrip, bowStringLine, nockedArrowGroup);
       }
 
       // Dotted 3D Ballistic Trajectory Preview Arc
@@ -1429,14 +1512,23 @@
           document.getElementById('draw-bar').style.width = `${pct}%`;
           document.getElementById('draw-label').textContent = sweet ? `GOLD SWEET SPOT ${pct}% (+15%)` : `CHARGE ${pct}%`;
           if (bowStringLine) {
+            const pullZ = 0.26 + state.drawCharge * 0.26;
             const pts = bowStringLine.geometry.attributes.position;
-            pts.setZ(1, 0.22 + state.drawCharge * 0.28);
+            pts.setZ(1, pullZ);
             pts.needsUpdate = true;
+            if (nockedArrowGroup) {
+              nockedArrowGroup.visible = !state.flying;
+              nockedArrowGroup.position.z = state.drawCharge * 0.26;
+            }
           }
         } else if (bowStringLine) {
           const pts = bowStringLine.geometry.attributes.position;
-          pts.setZ(1, 0.22);
+          pts.setZ(1, 0.26);
           pts.needsUpdate = true;
+          if (nockedArrowGroup) {
+            nockedArrowGroup.visible = !state.flying;
+            nockedArrowGroup.position.z = 0;
+          }
         }
 
         // Camera optical zoom & aim orientation
