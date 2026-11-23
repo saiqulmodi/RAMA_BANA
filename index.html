@@ -35,7 +35,9 @@
           <option value="pendulum" class="bg-slate-900 text-purple-300">Moving: Pendulum Arc (1.50×)</option>
           <option value="five_line" class="bg-slate-900 text-emerald-300">5-Target Line: #1-#5 (1m · 1.75×)</option>
         </select>
-                        <button id="pill-bulletcam" type="button" title="Toggle Slow-Motion Bullet/Arrow Flight Cam (Key B)" class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/20 hover:bg-indigo-500/35 border border-indigo-400/60 text-indigo-200 font-bold cursor-pointer transition">🎬 Bullet Cam: OFF</button>
+                                <button id="btn-dope" type="button" title="Ballistic Holdover & Windage DOPE Card" class="text-xs px-2.5 py-0.5 rounded-full bg-teal-500/20 hover:bg-teal-500/35 border border-teal-400/50 text-teal-200 font-bold cursor-pointer">📋 DOPE Card</button>
+        <button id="btn-2p" type="button" title="Toggle 1-Player vs 2-Player Pass-and-Play Match" class="text-xs px-2.5 py-0.5 rounded-full bg-pink-500/20 hover:bg-pink-500/35 border border-pink-400/50 text-pink-200 font-bold cursor-pointer">👤 1P Solo</button>
+        <button id="pill-bulletcam" type="button" title="Toggle Slow-Motion Bullet/Arrow Flight Cam (Key B)" class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/20 hover:bg-indigo-500/35 border border-indigo-400/60 text-indigo-200 font-bold cursor-pointer transition">🎬 Bullet Cam: OFF</button>
         <button id="pill-replay" type="button" title="Replay Last Shot Travel Path in Slow Motion (Key R)" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-500/60 text-slate-200 font-bold cursor-pointer transition disabled:opacity-40" disabled>↺ Replay</button>
         <button id="pill-drishti" type="button" title="Divya Drishti: Slow-Mo Target + Wide Sweet Spot (Key 1)" class="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/60 text-amber-200 font-bold cursor-pointer transition">👁 Divya Drishti (1)</button>
         <button id="pill-vayu" type="button" title="Vayu Stambhana: Zero Wind Drift for 2 Shots (Key 2)" class="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/60 text-cyan-200 font-bold cursor-pointer transition">🌪 Vayu Lock (1)</button>
@@ -57,8 +59,11 @@
         Drag viewport or use <b>WASD / Arrows</b> to aim · Hold <b>Space</b> (or touch button) for Gold Sweet Spot (+15%).
       </div>
       <div class="flex items-center gap-2 text-xs px-3 py-1 rounded-xl bg-slate-950/75 backdrop-blur border border-slate-700/60 tabular-nums pointer-events-auto">
-        <span class="text-slate-400">Wind:</span>
+        <span class="text-slate-400">Line Wind:</span>
         <span id="hud-wind" class="font-bold text-cyan-300">+0.0 m/s →</span>
+        <span class="text-slate-600">|</span>
+        <span class="text-slate-400">Downrange:</span>
+        <span id="hud-wind-far" class="font-bold text-sky-300">+0.0 m/s →</span>
         <span class="text-slate-600">|</span>
         <span class="text-slate-400">Elev (Up/Dn):</span>
         <span id="hud-elev" class="font-bold text-emerald-300">+6.500°</span>
@@ -193,6 +198,33 @@
         <button id="btn-copy-score" type="button" class="flex-1 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-xs cursor-pointer">Copy Challenge Score</button>
         <button id="btn-close-sc" type="button" class="flex-1 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs cursor-pointer">Play Again</button>
       </div>
+    </div>
+  </div>
+
+    <!-- Ballistic DOPE Rangefinder Card Modal -->
+  <div id="dope-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
+    <div class="w-full max-w-md rounded-2xl bg-slate-900 border border-teal-400/50 shadow-2xl p-5 text-xs">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div>
+          <h2 class="text-base font-black text-teal-300">Ballistic DOPE Rangefinder Card</h2>
+          <p id="dope-subtitle" class="text-[11px] text-slate-400 mt-0.5">Calibrated to current weapon velocity &amp; live winds</p>
+        </div>
+        <button id="btn-close-dope" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 font-bold cursor-pointer">Close</button>
+      </div>
+      <div class="mt-3 overflow-x-auto">
+        <table class="w-full text-left border-collapse tabular-nums">
+          <thead>
+            <tr class="border-b border-slate-700 text-slate-400 text-[11px]">
+              <th class="py-1.5">Range</th>
+              <th class="py-1.5">Flight (s)</th>
+              <th class="py-1.5 text-emerald-300">Zero Elev</th>
+              <th class="py-1.5 text-amber-300">Windage Fix</th>
+            </tr>
+          </thead>
+          <tbody id="dope-tbody" class="divide-y divide-slate-800/80 text-slate-200 font-mono"></tbody>
+        </table>
+      </div>
+      <p class="mt-3 text-[11px] text-slate-400">Tip: Values assume a 100% full draw/charge. Dial exact <span class="text-cyan-300 font-bold">0.002°</span> clicks using the bottom-right micro-adjuster.</p>
     </div>
   </div>
 
@@ -780,6 +812,7 @@
         }
         state.flying = false;
         projMesh.visible = false;
+        agniFireball.visible = false;
         const banner = document.getElementById('shot-banner');
         const stage = Math.max(1, Math.floor((state.distance - state.startDistance) / 25) + 1);
 
@@ -818,6 +851,7 @@
             pin.rotation.x = Math.PI / 2;
             pin.position.set(state.targetMode === 'five_line' ? projState.pos.x : dx, dy, 0.16);
             stuckGroup.add(pin);
+            spawnImpactShockwave(projState.pos, astra.agniActive);
 
             playTone(ringPts === 10 ? 880 : 620, 0.2, 'triangle', 0.18);
             triggerHaptic(50);
@@ -1269,6 +1303,115 @@
         if (e.code === 'KeyB') toggleBulletCam();
         if (e.code === 'KeyR') replayLastShotSlowMo();
       });
+      // --- 1. 3D Agni Solar Fireball & Impact Shockwave Ring ---
+      const agniFireball = new THREE.Mesh(
+        new THREE.SphereGeometry(GAME_MODE === 'pistol' ? 0.08 : 0.12, 16, 16),
+        new THREE.MeshBasicMaterial({ color: 0xff6b00, transparent: true, opacity: 0.92 })
+      );
+      const agniGlowLight = new THREE.PointLight(0xf97316, 0, 12);
+      agniFireball.add(agniGlowLight);
+      agniFireball.visible = false;
+      scene.add(agniFireball);
+
+      const shockwaves = [];
+      function spawnImpactShockwave(pos, isAgni) {
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(0.05, isAgni ? 0.24 : 0.12, 36),
+          new THREE.MeshBasicMaterial({ color: isAgni ? 0xf97316 : 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.95 })
+        );
+        ring.position.copy(pos);
+        ring.position.z += 0.04;
+        scene.add(ring);
+        shockwaves.push({ mesh: ring, age: 0, maxAge: isAgni ? 0.65 : 0.40, maxScale: isAgni ? 8.5 : 4.2 });
+      }
+
+      // --- 2. Downrange Wind Shear (Mid-Field Gust Layer >= 45m) ---
+      state.windFar = 0.8;
+      function rollWinds() {
+        if (astra.vayuShotsLeft > 0) {
+          astra.vayuShotsLeft--;
+          state.wind = 0.0;
+          state.windFar = 0.0;
+        } else {
+          state.wind = Math.max(-4.5, Math.min(4.5, Math.round((state.wind + (Math.random() - 0.5) * 1.4) * 10) / 10));
+          state.windFar = Math.max(-5.5, Math.min(5.5, Math.round((state.wind * 0.7 + (Math.random() - 0.5) * 2.4) * 10) / 10));
+        }
+      }
+
+      // --- 3. Ballistic DOPE Rangefinder Solver ---
+      function renderDopeTable() {
+        const tbody = document.getElementById('dope-tbody');
+        const sub = document.getElementById('dope-subtitle');
+        if (!tbody) return;
+        const eq = getEquipped();
+        const v0 = launchVelocity() * 1.05; // Full draw/charge velocity
+        if (sub) sub.textContent = `${eq.name} · V0 = ${v0.toFixed(1)} m/s · Line ${state.wind >= 0 ? '+' : ''}${state.wind.toFixed(1)} / Far ${state.windFar >= 0 ? '+' : ''}${state.windFar.toFixed(1)} m/s`;
+        const ranges = [70, 95, 120, 145, 170, 195];
+        tbody.innerHTML = ranges.map(d => {
+          const tFlight = d / v0;
+          const dropM = 0.5 * 9.81 * tFlight * tFlight + (1.55 - weaponGroup.position.y);
+          const elevRad = Math.atan2(dropM, d);
+          const elevDeg = snap002(THREE.MathUtils.radToDeg(elevRad), -5, 26);
+          const effWind = (state.wind * 0.45 + state.windFar * 0.55);
+          const driftM = 0.5 * (effWind * 0.65) * tFlight * tFlight;
+          const yawDeg = snap002(-THREE.MathUtils.radToDeg(Math.atan2(driftM, d)), -12, 12);
+          const activeRow = d === state.distance ? 'bg-teal-500/15 font-bold' : '';
+          return `<tr class="${activeRow}">
+            <td class="py-1.5">${d}m ${d === state.distance ? '◀' : ''}</td>
+            <td class="py-1.5 text-slate-400">${tFlight.toFixed(2)}s</td>
+            <td class="py-1.5 text-emerald-300">${elevDeg >= 0 ? '+' : ''}${elevDeg.toFixed(3)}°</td>
+            <td class="py-1.5 text-amber-300">${yawDeg >= 0 ? '+' : ''}${yawDeg.toFixed(3)}°</td>
+          </tr>`;
+        }).join('');
+      }
+
+      document.getElementById('btn-dope')?.addEventListener('click', () => {
+        renderDopeTable();
+        document.getElementById('dope-modal')?.classList.remove('hidden');
+      });
+      document.getElementById('btn-close-dope')?.addEventListener('click', () => document.getElementById('dope-modal')?.classList.add('hidden'));
+
+      // --- 4. 2-Player Pass-and-Play Match Controller ---
+      const match2P = {
+        enabled: false,
+        turn: 1, // 1 or 2
+        p1Score: 0,
+        p2Score: 0,
+        p1Hits: 0,
+        p2Hits: 0,
+        shotsPerPlayer: 5,
+        p1Shots: 0,
+        p2Shots: 0
+      };
+
+      function update2PHud() {
+        const btn = document.getElementById('btn-2p');
+        if (!btn) return;
+        if (!match2P.enabled) {
+          btn.textContent = '👤 1P Solo';
+          btn.classList.remove('ring-2', 'ring-pink-400');
+        } else {
+          btn.textContent = `👥 P${match2P.turn} Turn (${match2P.p1Score} vs ${match2P.p2Score})`;
+          btn.classList.add('ring-2', 'ring-pink-400');
+        }
+      }
+
+      document.getElementById('btn-2p')?.addEventListener('click', () => {
+        match2P.enabled = !match2P.enabled;
+        match2P.turn = 1;
+        match2P.p1Score = 0; match2P.p2Score = 0;
+        match2P.p1Hits = 0; match2P.p2Hits = 0;
+        match2P.p1Shots = 0; match2P.p2Shots = 0;
+        while (stuckGroup.children.length) stuckGroup.remove(stuckGroup.children[0]);
+        spotterHits.length = 0; drawSpotterCard();
+        state.score = 0; state.shotNum = 1; state.stageHits = 0;
+        resetShotAim();
+        update2PHud();
+        updateUI();
+        document.getElementById('shot-banner').innerHTML = match2P.enabled
+          ? '<span class="text-pink-300 font-black">2-PLAYER PASS &amp; PLAY STARTED!</span> Player 1 shoots first (5 shots each).'
+          : '<span class="text-slate-300 font-bold">Returned to 1-Player Tournament Mode.</span>';
+      });
       // --- Main 60 FPS Animation Loop ---
       let lastTs = performance.now();
       function animate(ts) {
@@ -1314,7 +1457,8 @@
 
         // Wind pennants flutter
         windPennants.forEach((f, idx) => {
-          f.rotation.y = Math.sin(ts * 0.006 + idx) * 0.18 + (state.wind >= 0 ? 0 : Math.PI);
+          const localW = idx < 2 ? state.wind : state.windFar;
+          f.rotation.y = Math.sin(ts * 0.006 + idx) * 0.18 + (localW >= 0 ? 0 : Math.PI);
         });
 
         // Target Movement Modes: Stationary | Rail Move (1,2,3+ mm/s) | Pendulum (5,6,7,8+ mm/s)
@@ -1401,11 +1545,13 @@
           const activeWind = bulletCam.replaying ? (projState.replayWind ?? state.wind) : state.wind;
           const prevZ = projState.pos.z;
 
-          projState.vel.x += activeWind * 0.65 * simDt;
+          const shearWind = projState.pos.z < -45 ? (bulletCam.replaying ? activeWind : state.windFar) : activeWind;
+          projState.vel.x += shearWind * 0.65 * simDt;
           projState.vel.y -= 9.81 * simDt;
           projState.pos.addScaledVector(projState.vel, simDt);
           projMesh.position.copy(projState.pos);
           projMesh.lookAt(projState.pos.clone().add(projState.vel));
+          if (astra.agniActive) { agniFireball.visible = true; agniFireball.position.copy(projState.pos); agniGlowLight.intensity = 2.6; trailLine.material.color.setHex(0xf97316); } else { agniFireball.visible = false; agniGlowLight.intensity = 0; trailLine.material.color.setHex(0xfacc15); }
           pushFlightTrailPoint(projState.pos);
 
           if (slowActive) {
@@ -1432,6 +1578,7 @@
         }
 
         if (weaponAura.visible) weaponAura.rotation.z += dt * 0.9;
+        for (let si = shockwaves.length - 1; si >= 0; si--) { const sw = shockwaves[si]; sw.age += dt; const p = sw.age / sw.maxAge; if (p >= 1) { scene.remove(sw.mesh); shockwaves.splice(si, 1); } else { const s = 1 + p * sw.maxScale; sw.mesh.scale.set(s, s, 1); sw.mesh.material.opacity = 1 - p; } }
         renderer.render(scene, camera);
       }
 
