@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ram_ban 3D Archery — 50–100 m · 1–25 g · 2–10 mm Rings</title>
+  <title>RAMA_BANA 3D Archery — 50–100 m · 1–25 g · 2–10 mm Rings</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Ccircle cx='44' cy='20' r='14' fill='none' stroke='%2338bdf8' stroke-width='3'/%3E%3Ccircle cx='44' cy='20' r='8' fill='none' stroke='%23ef4444' stroke-width='3'/%3E%3Ccircle cx='44' cy='20' r='3.5' fill='%23facc15'/%3E%3Cpath d='M14 14 Q 34 32 14 50' fill='none' stroke='%23f59e0b' stroke-width='4.5' stroke-linecap='round'/%3E%3Cline x1='14' y1='14' x2='14' y2='50' stroke='%237dd3fc' stroke-width='1.8'/%3E%3Cline x1='10' y1='46' x2='41' y2='22' stroke='%23fde047' stroke-width='3' stroke-linecap='round'/%3E%3Cpolygon points='44,20 35,21 39,27' fill='%23facc15'/%3E%3C/svg%3E">
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -16,7 +16,7 @@
 <body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 select-none">
   <header class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-slate-900 border-b border-slate-800">
     <div class="flex items-center gap-3">
-      <span class="text-base sm:text-lg font-bold tracking-tight text-amber-400">Ram_ban 3D Archery</span>
+      <span class="text-base sm:text-lg font-bold tracking-tight text-amber-400">RAMA_BANA 3D Archery</span>
       <span id="hud-round" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-medium">Arrow 1 / 5</span>
     </div>
     <div class="flex items-center gap-3 sm:gap-5 text-xs sm:text-sm">
@@ -30,7 +30,7 @@
   <main class="flex-1 flex flex-col lg:flex-row gap-3 p-3 max-w-6xl w-full mx-auto">
     <div id="stage-wrap" class="relative flex-1 min-h-[360px] sm:min-h-[450px] bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-lg">
       <div class="pointer-events-none absolute top-3 left-3 bg-slate-950/75 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700/70 text-xs text-slate-200">
-        Drag to aim Ramdhanu (up/down &amp; left/right), release to shoot!
+        Drag to aim RAMA_BANA (up/down &amp; left/right), release to shoot!
       </div>
       <div class="pointer-events-none absolute top-3 right-3 bg-slate-950/85 backdrop-blur p-1.5 rounded-full border border-slate-700/80 shadow">
         <canvas id="inset-canvas" width="116" height="116" class="block w-[108px] h-[108px] rounded-full"></canvas>
@@ -88,7 +88,7 @@
         <input id="in-yaw" type="range" min="-5.0" max="5.0" step="0.1" value="0.0" class="w-full accent-cyan-400 cursor-pointer">
 
         <button id="btn-shoot" type="button" class="mt-1.5 w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition shadow">
-          Loose Ramdhanu Arrow
+          Loose RAMA_BANA Arrow
         </button>
       </div>
 
@@ -113,11 +113,11 @@
 
       const state = {
         distance: 70, weight: 12, wind: 1.4, elevDeg: 5.5, yawDeg: 0.0,
-        score: 0, best: 0, shotNum: 1, maxShots: 5, baseMaxShots: 5, mulliganUsed: false, equippedBowId: localStorage.getItem('ramdhanu_equipped_bow') || 'bamboo', dailyMode: false, dailySeedState: 1, runShots: 0, runBullseyes: 0, runBestStreak: 0,
+        score: 0, best: 0, shotNum: 1, maxShots: 5, baseMaxShots: 5, mulliganUsed: false, equippedBowId: localStorage.getItem('RAMA_BANA_equipped_bow') || 'bamboo', dailyMode: false, dailySeedState: 1, runShots: 0, runBullseyes: 0, runBestStreak: 0,
         muted: false, flying: false, followTimer: 0, arrowPhys: null, hits: [], totalHits: 0, stageHits: 0, startDistance: 70, dragging: false, dragStart: null, audioCtx: null
       };
 
-      try { state.best = parseInt(localStorage.getItem('ramdhanu_best') || '0', 10) || 0; } catch (e) {}
+      try { state.best = parseInt(localStorage.getItem('RAMA_BANA_best') || '0', 10) || 0; } catch (e) {}
 
       const scene = new THREE.Scene();
       scene.fog = new THREE.FogExp2(0x1e1b3a, 0.0042);
@@ -339,7 +339,7 @@
       }
       addRangeMarkers();
 
-      // --- 1. Ramdhanu 7-Color Rainbow Arrow Trail ---
+      // --- 1. RAMA_BANA 7-Color Rainbow Arrow Trail ---
       const TRAIL_LEN = 26;
       const trailPositions = new Float32Array(TRAIL_LEN * 3);
       const trailColors = new Float32Array(TRAIL_LEN * 3);
@@ -616,7 +616,7 @@
 
         const pts = Math.round(mult * state.distance * wm);
         state.score += pts;
-        if (state.score > state.best) { state.best = state.score; try { localStorage.setItem('ramdhanu_best', String(state.best)); } catch (e) {} }
+        if (state.score > state.best) { state.best = state.score; try { localStorage.setItem('RAMA_BANA_best', String(state.best)); } catch (e) {} }
 
         state.hits.push({ dxMm: (hitX / 1.15) * 5.2, dyMm: (-missY / 1.15) * 5.2, pts });
         document.getElementById('val-drop').textContent = `${drop_m.toFixed(2)} m`;
