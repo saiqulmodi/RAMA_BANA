@@ -112,7 +112,7 @@
 
       const state = {
         distance: 70, weight: 12, wind: 1.4, elevDeg: 5.5, yawDeg: 0.0,
-        score: 0, best: 0, shotNum: 1, maxShots: 5,
+        score: 0, best: 0, shotNum: 1, maxShots: 5, baseMaxShots: 5, mulliganUsed: false,
         muted: false, flying: false, followTimer: 0, arrowPhys: null, hits: [], totalHits: 0, stageHits: 0, startDistance: 70, dragging: false, dragStart: null, audioCtx: null
       };
 
@@ -641,11 +641,40 @@
         updateUI();
       }
 
+      function useStageMulligan() {
+        if (state.mulliganUsed) return;
+        state.mulliganUsed = true;
+        state.maxShots = (state.maxShots || 5) + 1;
+        triggerHaptic(35, 0.4, 0.5);
+        playTone(660, 0.16, 'triangle', 0.14);
+        const banner = document.getElementById('shot-banner');
+        if (banner) {
+          banner.innerHTML = `<span class="font-bold text-emerald-300">Extra Quiver Arrow!</span> Shots increased to <b>${state.maxShots}</b> for this stage.`;
+        }
+        updateUI();
+      }
+
+      function syncMulliganButtons() {
+        const deskBtn = document.getElementById('btn-mulligan');
+        const mobBtn = document.getElementById('btn-touch-mulligan');
+        const avail = !state.mulliganUsed;
+        if (deskBtn) {
+          deskBtn.textContent = avail ? '+1 Arrow (1)' : '+1 Arrow (Used)';
+          deskBtn.disabled = !avail;
+          deskBtn.classList.toggle('opacity-45', !avail);
+        }
+        if (mobBtn) {
+          mobBtn.textContent = avail ? '+1' : '0';
+          mobBtn.disabled = !avail;
+          mobBtn.classList.toggle('opacity-45', !avail);
+        }
+      }
+
       function resetRound() {
         const curStage = Math.max(1, Math.floor((state.distance - (state.startDistance || 70)) / 25) + 1);
         saveTournamentScore(state.score, curStage, state.distance);
         clearStuckArrows();
-        state.score = 0; state.shotNum = 1; state.hits = []; state.totalHits = 0; state.stageHits = 0; state.distance = state.startDistance || 70; state.flying = false; state.followTimer = 0;
+        state.score = 0; state.shotNum = 1; state.hits = []; state.totalHits = 0; state.stageHits = 0; state.baseMaxShots = 5; state.maxShots = 5; state.mulliganUsed = false; state.streak = 0; state.distance = state.startDistance || 70; state.flying = false; state.followTimer = 0;
         const distSlider = document.getElementById('in-dist');
         if (distSlider) distSlider.value = String(state.distance);
         nockedArrow.visible = true; flyingArrowMesh.visible = false;
@@ -755,7 +784,7 @@
             a.vx += (state.wind * subDt * 0.92) / (Math.max(2.2, Math.sqrt(state.weight)) * (1 + a.t * 0.42));
             const prevX = a.x, prevY = a.y, prevZ = a.z;
             a.x += a.vx * subDt; a.y += a.vy * subDt; a.z += a.vz * subDt;
-            const targetFaceZ = -state.distance + 0.09;
+            const targetFaceZ = targetGroup.position.z + 0.09;
             const prevTipZ = prevZ - 0.55, currTipZ = a.z - 0.55;
             if (prevTipZ >= targetFaceZ && currTipZ <= targetFaceZ) {
               const frac = (prevTipZ - targetFaceZ) / Math.max(1e-6, prevTipZ - currTipZ);
