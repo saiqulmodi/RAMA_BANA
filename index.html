@@ -33,6 +33,7 @@
           <option value="stationary" class="bg-slate-900 text-slate-100">Target: Stationary (1.00×)</option>
           <option value="moving" class="bg-slate-900 text-amber-300">Moving: Straight Rail (1.25×)</option>
           <option value="pendulum" class="bg-slate-900 text-purple-300">Moving: Pendulum Arc (1.50×)</option>
+          <option value="five_line" class="bg-slate-900 text-emerald-300">5-Target Line: #1-#5 (1m · 1.75×)</option>
         </select>
                         <button id="pill-bulletcam" type="button" title="Toggle Slow-Motion Bullet/Arrow Flight Cam (Key B)" class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/20 hover:bg-indigo-500/35 border border-indigo-400/60 text-indigo-200 font-bold cursor-pointer transition">🎬 Bullet Cam: OFF</button>
         <button id="pill-replay" type="button" title="Replay Last Shot Travel Path in Slow Motion (Key R)" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-500/60 text-slate-200 font-bold cursor-pointer transition disabled:opacity-40" disabled>↺ Replay</button>
@@ -112,7 +113,7 @@
       <button type="button" data-adj="yaw" data-delta="0.002" class="py-1 rounded bg-slate-800 hover:bg-slate-700 border border-amber-500/40 font-mono text-[11px] text-amber-200 font-bold cursor-pointer">+0.002°</button>
       <button type="button" data-adj="yaw" data-delta="0.050" class="py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600/70 font-mono text-[11px] text-cyan-300 cursor-pointer">+0.050°</button>
     </div>
-    <input id="in-yaw" type="range" min="-6.000" max="6.000" step="0.002" value="0.000" class="w-full cursor-pointer" />
+    <input id="in-yaw" type="range" min="-12.000" max="12.000" step="0.002" value="0.000" class="w-full cursor-pointer" />
 
     <div class="flex items-center justify-between">
       <span class="font-bold text-slate-300">Draw Weight</span>
@@ -482,6 +483,79 @@
       gantryGroup.add(gTop, gRod);
       scene.add(gantryGroup);
 
+      // --- 5-Target Line (#1, #2, #3, #4, #5 spaced 1.0m apart laterally) ---
+      const fiveLineGroup = new THREE.Group();
+      fiveLineGroup.visible = false;
+      scene.add(fiveLineGroup);
+
+      const fiveLineTargets = [];
+      let activeLineIndex = 0; // 0..4 corresponding to Target #1..#5
+
+      function makeNumberBadgeTexture(num, isActive) {
+        const c = document.createElement('canvas');
+        c.width = 128; c.height = 128;
+        const g = c.getContext('2d');
+        g.fillStyle = isActive ? '#facc15' : '#0f172a';
+        g.beginPath(); g.arc(64, 64, 58, 0, Math.PI * 2); g.fill();
+        g.lineWidth = 6;
+        g.strokeStyle = isActive ? '#ffffff' : '#38bdf8';
+        g.stroke();
+        g.fillStyle = isActive ? '#0f172a' : '#f8fafc';
+        g.font = '900 64px sans-serif';
+        g.textAlign = 'center';
+        g.textBaseline = 'middle';
+        g.fillText(String(num), 64, 68);
+        return new THREE.CanvasTexture(c);
+      }
+
+      for (let idx = 0; idx < 5; idx++) {
+        const laneX = (idx - 2) * 1.0; // -2.0m, -1.0m, 0.0m, +1.0m, +2.0m (1 meter apart)
+        const unit = new THREE.Group();
+        unit.position.set(laneX, 0, 0);
+
+        const disc = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.44, 0.44, 0.14, 32),
+          [
+            new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 }),
+            new THREE.MeshStandardMaterial({ map: targetTex, roughness: 0.45 }),
+            new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 })
+          ]
+        );
+        disc.rotation.x = Math.PI / 2;
+        disc.castShadow = true;
+        unit.add(disc);
+
+        const halo = new THREE.Mesh(
+          new THREE.RingGeometry(0.46, 0.52, 32),
+          new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide })
+        );
+        halo.position.z = 0.08;
+        halo.visible = (idx === 0);
+        unit.add(halo);
+
+        const badge = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.36, 0.36),
+          new THREE.MeshBasicMaterial({ map: makeNumberBadgeTexture(idx + 1, idx === 0), transparent: true })
+        );
+        badge.position.set(0, 0.68, 0.05);
+        unit.add(badge);
+
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 1.65, 8), trunkMat);
+        post.position.set(0, -0.78, -0.08);
+        unit.add(post);
+
+        fiveLineGroup.add(unit);
+        fiveLineTargets.push({ index: idx, num: idx + 1, xOffset: laneX, group: unit, halo, badge });
+      }
+
+      function refreshFiveLineHighlight() {
+        fiveLineTargets.forEach((t, i) => {
+          const active = (i === activeLineIndex);
+          t.halo.visible = active;
+          t.badge.material.map = makeNumberBadgeTexture(t.num, active);
+          t.badge.material.needsUpdate = true;
+        });
+      }
       // --- 3D Player Weapon (Bow vs Match Pistol) ---
       const weaponGroup = new THREE.Group();
       weaponGroup.position.set(0.26, 1.42, -0.44);
@@ -727,7 +801,7 @@
             if (state.streak > state.runBestStreak) state.runBestStreak = state.streak;
             if (ringPts === 10) state.runBullseyes++;
 
-            const moveMult = state.targetMode === 'pendulum' ? 1.5 : (state.targetMode === 'moving' ? 1.25 : 1.0);
+            const moveMult = state.targetMode === 'five_line' ? 1.75 : (state.targetMode === 'pendulum' ? 1.5 : (state.targetMode === 'moving' ? 1.25 : 1.0));
             const agniMult = astra.agniActive ? 2.0 : 1.0;
             const pts = Math.round(ringPts * state.distance * (1 + state.streak * 0.1) * (projState.steadyBonus || 1.0) * moveMult * agniMult);
             state.score += pts;
@@ -742,7 +816,7 @@
               new THREE.MeshStandardMaterial({ color: ringPts === 10 ? 0xfacc15 : 0x38bdf8 })
             );
             pin.rotation.x = Math.PI / 2;
-            pin.position.set(dx, dy, 0.16);
+            pin.position.set(state.targetMode === 'five_line' ? projState.pos.x : dx, dy, 0.16);
             stuckGroup.add(pin);
 
             playTone(ringPts === 10 ? 880 : 620, 0.2, 'triangle', 0.18);
@@ -779,7 +853,7 @@
           state.maxShots = state.baseMaxShots;
           state.mulliganUsed = false;
           state.distance += 25;
-          resetAstrasForStage();
+          resetAstrasForStage(); activeLineIndex = 0; refreshFiveLineHighlight();
           const nextStage = Math.floor((state.distance - state.startDistance) / 25) + 1;
           if (nextStage > state.bestStage) {
             state.bestStage = nextStage;
@@ -896,7 +970,7 @@
             state.elevDeg = snap002(state.elevDeg + delta, -5, 26);
             shotAimAdjusted = true; shotAimAdjusted = true; shotAimAdjusted = true; document.getElementById('in-elev').value = state.elevDeg.toFixed(3);
           } else {
-            state.yawDeg = snap002(state.yawDeg + delta, -6, 6);
+            state.yawDeg = snap002(state.yawDeg + delta, -12, 12);
             document.getElementById('in-yaw').value = state.yawDeg.toFixed(3);
           }
           shotAimAdjusted = true; shotAimAdjusted = true; shotAimAdjusted = true; playTone(980, 0.025, 'sine', 0.06);
@@ -909,7 +983,7 @@
         // 3.5x Scope scales drag sensitivity down so 1px movement = 0.002° micro-correction
         const sens = state.scoped ? 0.002 : 0.036;
         state.elevDeg = snap002(dragStart.el - (e.clientY - dragStart.y) * sens, -5, 26);
-        state.yawDeg = snap002(dragStart.yw + (e.clientX - dragStart.x) * sens, -6, 6);
+        state.yawDeg = snap002(dragStart.yw + (e.clientX - dragStart.x) * sens, -12, 12);
         shotAimAdjusted = true; shotAimAdjusted = true; shotAimAdjusted = true; document.getElementById('in-elev').value = state.elevDeg.toFixed(3);
         document.getElementById('in-yaw').value = state.yawDeg.toFixed(3);
         updateUI();
@@ -933,7 +1007,7 @@
         if (!state.dragging || !tStart) return;
         const sens = state.scoped ? 0.002 : 0.040;
         state.elevDeg = snap002(tStart.el - (e.clientY - tStart.y) * sens, -5, 26);
-        state.yawDeg = snap002(tStart.yw + (e.clientX - tStart.x) * sens, -6, 6);
+        state.yawDeg = snap002(tStart.yw + (e.clientX - tStart.x) * sens, -12, 12);
         shotAimAdjusted = true; shotAimAdjusted = true; shotAimAdjusted = true; document.getElementById('in-elev').value = state.elevDeg.toFixed(3);
         document.getElementById('in-yaw').value = state.yawDeg.toFixed(3);
         updateUI();
@@ -1046,7 +1120,7 @@
       document.getElementById('btn-reset').addEventListener('click', () => {
         while (stuckGroup.children.length) stuckGroup.remove(stuckGroup.children[0]);
         state.score = 0; state.shotNum = 1; state.stageHits = 0; state.totalHits = 0;
-        state.baseMaxShots = 5; state.maxShots = 5; state.mulliganUsed = false; state.distance = state.startDistance; resetShotAim(); resetAstrasForStage(); resetShotAim(); resetShotAim();
+        state.baseMaxShots = 5; state.maxShots = 5; state.mulliganUsed = false; state.distance = state.startDistance; resetShotAim(); resetAstrasForStage(); activeLineIndex = 0; refreshFiveLineHighlight(); resetShotAim(); resetShotAim();
         updateUI();
       });
 
@@ -1219,8 +1293,8 @@
         const kRate = state.scoped ? 0.12 : 3.6;
         if (keys['KeyW'] || keys['ArrowUp']) { state.elevDeg = snap002(state.elevDeg + kRate * dt, -5, 26); shotAimAdjusted = true; shotAimAdjusted = true; shotAimAdjusted = true; document.getElementById('in-elev').value = state.elevDeg.toFixed(3); updateUI(); }
         if (keys['KeyS'] || keys['ArrowDown']) { state.elevDeg = snap002(state.elevDeg - kRate * dt, -5, 26); shotAimAdjusted = true; shotAimAdjusted = true; shotAimAdjusted = true; document.getElementById('in-elev').value = state.elevDeg.toFixed(3); updateUI(); }
-        if (keys['KeyA'] || keys['ArrowLeft']) { state.yawDeg = snap002(state.yawDeg - kRate * dt, -6, 6); document.getElementById('in-yaw').value = state.yawDeg.toFixed(3); updateUI(); }
-        if (keys['KeyD'] || keys['ArrowRight']) { state.yawDeg = snap002(state.yawDeg + kRate * dt, -6, 6); document.getElementById('in-yaw').value = state.yawDeg.toFixed(3); updateUI(); }
+        if (keys['KeyA'] || keys['ArrowLeft']) { state.yawDeg = snap002(state.yawDeg - kRate * dt, -12, 12); document.getElementById('in-yaw').value = state.yawDeg.toFixed(3); updateUI(); }
+        if (keys['KeyD'] || keys['ArrowRight']) { state.yawDeg = snap002(state.yawDeg + kRate * dt, -12, 12); document.getElementById('in-yaw').value = state.yawDeg.toFixed(3); updateUI(); }
 
         // Charge meter & bowstring pullback
         if (state.dragging && !state.flying) {
@@ -1261,6 +1335,8 @@
         const elevY = stageNow >= 4 ? 1.55 + Math.sin(stageNow * 1.4) * 0.9 : 1.55;
 
         if (state.targetMode === 'moving') {
+          fiveLineGroup.visible = false;
+          targetGroup.visible = true;
           gantryGroup.visible = false;
           railGroup.visible = true;
           const slowFactor = astra.drishtiTimer > 0 ? 0.35 : 1.0;
@@ -1273,6 +1349,8 @@
           railGroup.position.set(0, 0, targetGroup.position.z);
           mHud.textContent = `Rail Move: ${mmSec} mm/s (1.25×)`;
         } else if (state.targetMode === 'pendulum') {
+          fiveLineGroup.visible = false;
+          targetGroup.visible = true;
           railGroup.visible = false;
           gantryGroup.visible = true;
           gantryGroup.position.set(0, 0, -state.distance);
@@ -1286,7 +1364,16 @@
           targetGroup.rotation.z = -Math.sin(phase) * 0.22;
           gRod.position.set(sx * 0.5, 3.55, sz * 0.5);
           mHud.textContent = `Pendulum: ${mmSec} mm/s (1.50×)`;
+        } else if (state.targetMode === 'five_line') {
+          railGroup.visible = false;
+          gantryGroup.visible = false;
+          targetGroup.visible = false;
+          fiveLineGroup.visible = true;
+          fiveLineGroup.position.set(0, elevY, -state.distance);
+          mHud.textContent = `5-Line: Hit #${activeLineIndex + 1} (1m · 1.75×)`;
         } else {
+          fiveLineGroup.visible = false;
+          targetGroup.visible = true;
           railGroup.visible = false;
           gantryGroup.visible = false;
           targetGroup.position.set(0, elevY, -state.distance);
