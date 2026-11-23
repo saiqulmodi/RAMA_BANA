@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+ï»¿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ramdhanu 3D Archery — 50–100 m · 1–25 g · 2–10 mm Rings</title>
+  <title>Ramdhanu 3D Archery â€” 50â€“100 m Â· 1â€“25 g Â· 2â€“10 mm Rings</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
@@ -49,13 +49,13 @@
         </div>
         <div>
           <div class="text-[11px] uppercase tracking-wider text-slate-400">Last Drop</div>
-          <div id="val-drop" class="text-base font-bold text-amber-300 tabular-nums">—</div>
+          <div id="val-drop" class="text-base font-bold text-amber-300 tabular-nums">â€”</div>
         </div>
       </div>
 
       <div class="bg-slate-900 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-2.5">
         <div class="flex items-center justify-between">
-          <label for="in-weight" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Arrow Weight (1–25 g)</label>
+          <label for="in-weight" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Arrow Weight (1â€“25 g)</label>
           <span id="lbl-weight" class="text-sm font-bold text-amber-400 tabular-nums">12 g</span>
         </div>
         <input id="in-weight" type="range" min="1" max="25" step="1" value="12" class="w-full accent-amber-400 cursor-pointer">
@@ -64,25 +64,25 @@
           <button type="button" data-w="12" class="preset-w py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium">12 g Mid</button>
           <button type="button" data-w="22" class="preset-w py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium">22 g Heavy</button>
         </div>
-        <div id="weight-note" class="text-xs text-slate-400">Balanced flight · 61 m/s · 1.23× score</div>
+        <div id="weight-note" class="text-xs text-slate-400">Balanced flight Â· 61 m/s Â· 1.23Ã— score</div>
       </div>
 
       <div class="bg-slate-900 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-2">
         <div class="flex items-center justify-between">
-          <label for="in-dist" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Distance (50–100 m)</label>
+          <label for="in-dist" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Distance (50â€“100 m)</label>
           <span id="lbl-dist" class="text-sm font-bold text-sky-400 tabular-nums">70 m</span>
         </div>
         <input id="in-dist" type="range" min="50" max="100" step="5" value="70" class="w-full accent-sky-400 cursor-pointer">
 
         <div class="flex items-center justify-between mt-1">
           <label for="in-elev" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Elevation (Pitch)</label>
-          <span id="lbl-elev" class="text-sm font-bold text-emerald-400 tabular-nums">+5.5°</span>
+          <span id="lbl-elev" class="text-sm font-bold text-emerald-400 tabular-nums">+5.5Â°</span>
         </div>
         <input id="in-elev" type="range" min="0.5" max="15.0" step="0.1" value="5.5" class="w-full accent-emerald-400 cursor-pointer">
 
         <div class="flex items-center justify-between mt-1">
           <label for="in-yaw" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Windage (Left / Right)</label>
-          <span id="lbl-yaw" class="text-sm font-bold text-cyan-300 tabular-nums">0.0°</span>
+          <span id="lbl-yaw" class="text-sm font-bold text-cyan-300 tabular-nums">0.0Â°</span>
         </div>
         <input id="in-yaw" type="range" min="-5.0" max="5.0" step="0.1" value="0.0" class="w-full accent-cyan-400 cursor-pointer">
 
@@ -94,11 +94,11 @@
       <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-xs">
         <div class="font-semibold text-slate-300 mb-1.5">Circular Target Rings (at <span id="ref-dist">70</span> m)</div>
         <div class="grid grid-cols-2 gap-y-1 text-slate-400">
-          <span class="text-amber-300 font-medium">2 mm Bullseye (10×)</span><span id="ring-2" class="text-right font-semibold text-slate-200 tabular-nums">860 pts</span>
-          <span>4 mm Ring (7.5×)</span><span id="ring-4" class="text-right tabular-nums">645 pts</span>
-          <span>6 mm Ring (5.0×)</span><span id="ring-6" class="text-right tabular-nums">430 pts</span>
-          <span>8 mm Ring (2.5×)</span><span id="ring-8" class="text-right tabular-nums">215 pts</span>
-          <span>10 mm Ring (1.0×)</span><span id="ring-10" class="text-right tabular-nums">86 pts</span>
+          <span class="text-amber-300 font-medium">2 mm Bullseye (10Ã—)</span><span id="ring-2" class="text-right font-semibold text-slate-200 tabular-nums">860 pts</span>
+          <span>4 mm Ring (7.5Ã—)</span><span id="ring-4" class="text-right tabular-nums">645 pts</span>
+          <span>6 mm Ring (5.0Ã—)</span><span id="ring-6" class="text-right tabular-nums">430 pts</span>
+          <span>8 mm Ring (2.5Ã—)</span><span id="ring-8" class="text-right tabular-nums">215 pts</span>
+          <span>10 mm Ring (1.0Ã—)</span><span id="ring-10" class="text-right tabular-nums">86 pts</span>
         </div>
       </div>
     </aside>
@@ -543,13 +543,13 @@
         document.getElementById('val-wind').textContent = `${state.wind >= 0 ? '+' : ''}${state.wind.toFixed(1)} m/s`;
         document.getElementById('lbl-weight').textContent = `${state.weight} g`;
         document.getElementById('lbl-dist').textContent = `${state.distance} m`;
-        document.getElementById('lbl-elev').textContent = `+${state.elevDeg.toFixed(1)}°`;
-        document.getElementById('lbl-yaw').textContent = `${state.yawDeg >= 0 ? '+' : ''}${state.yawDeg.toFixed(1)}°`;
+        document.getElementById('lbl-elev').textContent = `+${state.elevDeg.toFixed(1)}Â°`;
+        document.getElementById('lbl-yaw').textContent = `${state.yawDeg >= 0 ? '+' : ''}${state.yawDeg.toFixed(1)}Â°`;
         document.getElementById('ref-dist').textContent = state.distance;
 
         const wm = weightMult(state.weight), speed = Math.round(launchSpeed(state.weight));
         const desc = state.weight <= 7 ? 'Fast, wind-sensitive' : (state.weight >= 16 ? 'Heavy, cuts wind' : 'Balanced flight');
-        document.getElementById('weight-note').textContent = `${desc} · ${speed} m/s · ${wm.toFixed(2)}× score`;
+        document.getElementById('weight-note').textContent = `${desc} Â· ${speed} m/s Â· ${wm.toFixed(2)}Ã— score`;
 
         document.getElementById('ring-2').textContent = `${Math.round(10 * state.distance * wm).toLocaleString()} pts`;
         document.getElementById('ring-4').textContent = `${Math.round(7.5 * state.distance * wm).toLocaleString()} pts`;
@@ -621,7 +621,7 @@
         document.getElementById('val-drop').textContent = `${drop_m.toFixed(2)} m`;
         const banner = document.getElementById('shot-banner');
         banner.classList.remove('hidden');
-        banner.innerHTML = `<span class="font-bold text-amber-300">${ringLabel}</span> · +${pts} pts · Time: <b>${flightTime.toFixed(2)}s</b> · Drop: <b>${drop_m.toFixed(2)}m</b>`;
+        banner.innerHTML = `<span class="font-bold text-amber-300">${ringLabel}</span> Â· +${pts} pts Â· Time: <b>${flightTime.toFixed(2)}s</b> Â· Drop: <b>${drop_m.toFixed(2)}m</b>`;
 
         playTone(pts > 0 ? (diaMm <= 2 ? 880 : 520) : 140, 0.22, pts > 0 ? 'sine' : 'sawtooth', pts > 0 ? 0.16 : 0.08);
         if (pts > 0) {
@@ -633,7 +633,7 @@
               if (Number(distSlider.max) < state.distance) distSlider.max = String(state.distance);
               distSlider.value = String(state.distance);
             }
-            banner.innerHTML += ` · <span class="text-cyan-300 font-bold">5 Hits! Range +25m ? ${state.distance}m</span>`;
+            banner.innerHTML += ` Â· <span class="text-cyan-300 font-bold">5 Hits! Range +25m ? ${state.distance}m</span>`;
           }
         }
         state.shotNum += 1;
@@ -678,7 +678,7 @@
         const distSlider = document.getElementById('in-dist');
         if (distSlider) distSlider.value = String(state.distance);
         nockedArrow.visible = true; flyingArrowMesh.visible = false;
-        document.getElementById('val-drop').textContent = '—';
+        document.getElementById('val-drop').textContent = 'â€”';
         document.getElementById('shot-banner').classList.add('hidden');
         updateUI();
       }
