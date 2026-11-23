@@ -935,19 +935,7 @@
         if (inEl) inEl.value = state.elevDeg.toFixed(3);
         if (inYw) inYw.value = state.yawDeg.toFixed(3);
       }
-      let shotAimAdjusted = true;
-      function resetShotAim() {
-        const baseEl = GAME_MODE === 'pistol' ? 1.400 : 6.500;
-        const driftEl = (Math.random() - 0.5) * 0.48;
-        const driftYw = (Math.random() - 0.5) * 0.44;
-        state.elevDeg = snap002(baseEl + driftEl, -5, 26);
-        state.yawDeg = snap002(driftYw, -6, 6);
-        shotAimAdjusted = false;
-        const inEl = document.getElementById('in-elev');
-        const inYw = document.getElementById('in-yaw');
-        if (inEl) inEl.value = state.elevDeg.toFixed(3);
-        if (inYw) inYw.value = state.yawDeg.toFixed(3);
-      }
+      
       let shotAimAdjusted = true;
       function resetShotAim() {
         const baseEl = GAME_MODE === 'pistol' ? 1.400 : 6.500;
