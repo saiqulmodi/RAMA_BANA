@@ -21,7 +21,7 @@
     <div class="flex items-center gap-3 sm:gap-5 text-xs sm:text-sm">
       <div>Score: <span id="hud-score" class="font-bold text-emerald-400 tabular-nums">0</span></div>
       <div>Best: <span id="hud-best" class="font-bold text-amber-300 tabular-nums">0</span></div>
-      <button id="btn-mute" type="button" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition">Sound: ON</button>
+      <button id="btn-mute" type="button" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition">Sound: ON</button> <button id="btn-test-av" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600/60 text-cyan-200 font-semibold transition cursor-pointer" title="Test bow audio and controller/mobile vibration">Test Audio &amp; Vibe</button> <button id="btn-guide" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 font-semibold transition cursor-pointer">? Guide</button>
       <button id="btn-reset" type="button" class="px-2.5 py-1 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition">New Round</button>
     </div>
   </header>
@@ -112,7 +112,7 @@
 
       const state = {
         distance: 70, weight: 12, wind: 1.4, elevDeg: 5.5, yawDeg: 0.0,
-        score: 0, best: 0, shotNum: 1, maxShots: 5, baseMaxShots: 5, mulliganUsed: false, equippedBowId: localStorage.getItem('ramdhanu_equipped_bow') || 'bamboo', dailyMode: false, dailySeedState: 1,
+        score: 0, best: 0, shotNum: 1, maxShots: 5, baseMaxShots: 5, mulliganUsed: false, equippedBowId: localStorage.getItem('ramdhanu_equipped_bow') || 'bamboo', dailyMode: false, dailySeedState: 1, runShots: 0, runBullseyes: 0, runBestStreak: 0,
         muted: false, flying: false, followTimer: 0, arrowPhys: null, hits: [], totalHits: 0, stageHits: 0, startDistance: 70, dragging: false, dragStart: null, audioCtx: null
       };
 
@@ -594,7 +594,7 @@
       function shoot() {
         if (state.flying) return;
         if (state.shotNum > state.maxShots) { resetRound(); return; }
-        initAudio(); playBowTwang(state.drawCharge || 0.85);
+        initAudio(); state.runShots = (state.runShots || 0) + 1; playBowTwang(state.drawCharge || 0.85);
 
         const v0 = launchSpeed(state.weight), pitch = (state.elevDeg * Math.PI) / 180, yaw = (-state.yawDeg * Math.PI) / 180;
         state.flying = true; nockedArrow.visible = false; flyingArrowMesh.visible = true;
@@ -674,7 +674,7 @@
         const curStage = Math.max(1, Math.floor((state.distance - (state.startDistance || 70)) / 25) + 1);
         saveTournamentScore(state.score, curStage, state.distance);
         clearStuckArrows();
-        state.score = 0; state.shotNum = 1; state.hits = []; state.totalHits = 0; state.stageHits = 0; state.baseMaxShots = 5; state.maxShots = 5; state.mulliganUsed = false; state.streak = 0; state.distance = state.startDistance || 70; state.flying = false; state.followTimer = 0;
+        state.score = 0; state.shotNum = 1; state.hits = []; state.totalHits = 0; state.stageHits = 0; state.baseMaxShots = 5; state.maxShots = 5; state.mulliganUsed = false; state.streak = 0; state.runShots = 0; state.runBullseyes = 0; state.runBestStreak = 0; state.distance = state.startDistance || 70; state.flying = false; state.followTimer = 0;
         const distSlider = document.getElementById('in-dist');
         if (distSlider) distSlider.value = String(state.distance);
         nockedArrow.visible = true; flyingArrowMesh.visible = false;
