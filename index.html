@@ -34,6 +34,9 @@
           <option value="moving" class="bg-slate-900 text-amber-300">Moving: Straight Rail (1.25×)</option>
           <option value="pendulum" class="bg-slate-900 text-purple-300">Moving: Pendulum Arc (1.50×)</option>
         </select>
+                <button id="pill-drishti" type="button" title="Divya Drishti: Slow-Mo Target + Wide Sweet Spot (Key 1)" class="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/60 text-amber-200 font-bold cursor-pointer transition">👁 Divya Drishti (1)</button>
+        <button id="pill-vayu" type="button" title="Vayu Stambhana: Zero Wind Drift for 2 Shots (Key 2)" class="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/60 text-cyan-200 font-bold cursor-pointer transition">🌪 Vayu Lock (1)</button>
+        <button id="pill-agni" type="button" title="Agni Astra: 2.0x Solar Score Multiplier Next Shot (Key 3)" class="text-xs px-2.5 py-0.5 rounded-full bg-orange-500/20 hover:bg-orange-500/35 border border-orange-400/60 text-orange-200 font-bold cursor-pointer transition">🔥 Agni 2× (1)</button>
         <button id="btn-armory" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/50 text-purple-200 font-semibold cursor-pointer">Bows (1/4)</button>
         <button id="btn-daily" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-200 font-semibold cursor-pointer">Mode: Tournament</button>
         <button id="btn-mulligan" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 font-semibold cursor-pointer">+1 Arrow (1)</button>
@@ -646,7 +649,7 @@
         initAudio();
         const eq = getEquipped();
         const charge = Math.max(0.35, state.drawCharge || 0.88);
-        const sweet = charge >= eq.sweetMin && charge <= eq.sweetMax;
+        const pad = astra.drishtiTimer > 0 ? 0.14 : 0; const sweet = charge >= (eq.sweetMin - pad) && charge <= Math.min(0.99, eq.sweetMax + 0.02);
         const steadyBonus = sweet ? 1.15 : 1.0;
 
         state.flying = true;
@@ -711,7 +714,8 @@
             if (ringPts === 10) state.runBullseyes++;
 
             const moveMult = state.targetMode === 'pendulum' ? 1.5 : (state.targetMode === 'moving' ? 1.25 : 1.0);
-            const pts = Math.round(ringPts * state.distance * (1 + state.streak * 0.1) * (projState.steadyBonus || 1.0) * moveMult);
+            const agniMult = astra.agniActive ? 2.0 : 1.0;
+            const pts = Math.round(ringPts * state.distance * (1 + state.streak * 0.1) * (projState.steadyBonus || 1.0) * moveMult * agniMult);
             state.score += pts;
             if (state.score > state.best) {
               state.best = state.score;
@@ -743,7 +747,9 @@
 
         state.shotNum++;
         state.wind = Math.round((state.wind + (Math.random() - 0.5) * 1.2) * 10) / 10;
-        state.wind = Math.max(-4.5, Math.min(4.5, state.wind));
+        if (astra.vayuShotsLeft > 0) { astra.vayuShotsLeft--; state.wind = 0.0; } else { state.wind = Math.max(-4.5, Math.min(4.5, state.wind)); }
+        astra.agniActive = false;
+        updateAstraHud();
         resetShotAim();
         banner.innerHTML += ' · <span class="text-cyan-300 font-semibold">Sights reset — re-aim for next shot!</span>';
         resetShotAim();
@@ -759,6 +765,7 @@
           state.maxShots = state.baseMaxShots;
           state.mulliganUsed = false;
           state.distance += 25;
+          resetAstrasForStage();
           const nextStage = Math.floor((state.distance - state.startDistance) / 25) + 1;
           if (nextStage > state.bestStage) {
             state.bestStage = nextStage;
@@ -1025,7 +1032,7 @@
       document.getElementById('btn-reset').addEventListener('click', () => {
         while (stuckGroup.children.length) stuckGroup.remove(stuckGroup.children[0]);
         state.score = 0; state.shotNum = 1; state.stageHits = 0; state.totalHits = 0;
-        state.baseMaxShots = 5; state.maxShots = 5; state.mulliganUsed = false; state.distance = state.startDistance; resetShotAim(); resetShotAim(); resetShotAim();
+        state.baseMaxShots = 5; state.maxShots = 5; state.mulliganUsed = false; state.distance = state.startDistance; resetShotAim(); resetAstrasForStage(); resetShotAim(); resetShotAim();
         updateUI();
       });
 
@@ -1035,11 +1042,97 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
       });
 
+      // --- Rama Astra Tactical Power Pills (Divya Drishti, Vayu Lock, Agni 2x) ---
+      const astra = {
+        drishtiCharges: 1,
+        drishtiTimer: 0,
+        vayuCharges: 1,
+        vayuShotsLeft: 0,
+        agniCharges: 1,
+        agniActive: false
+      };
+
+      function resetAstrasForStage() {
+        astra.drishtiCharges = 1;
+        astra.vayuCharges = 1;
+        astra.agniCharges = 1;
+        astra.agniActive = false;
+        updateAstraHud();
+      }
+
+      function updateAstraHud() {
+        const b1 = document.getElementById('pill-drishti');
+        const b2 = document.getElementById('pill-vayu');
+        const b3 = document.getElementById('pill-agni');
+        if (b1) {
+          b1.textContent = astra.drishtiTimer > 0 ? `👁 Drishti ${astra.drishtiTimer.toFixed(1)}s` : `👁 Divya Drishti (${astra.drishtiCharges})`;
+          b1.classList.toggle('ring-2', astra.drishtiTimer > 0);
+          b1.classList.toggle('ring-amber-300', astra.drishtiTimer > 0);
+          b1.disabled = astra.drishtiCharges <= 0 && astra.drishtiTimer <= 0;
+        }
+        if (b2) {
+          b2.textContent = astra.vayuShotsLeft > 0 ? `🌪 Vayu Active (${astra.vayuShotsLeft})` : `🌪 Vayu Lock (${astra.vayuCharges})`;
+          b2.classList.toggle('ring-2', astra.vayuShotsLeft > 0);
+          b2.classList.toggle('ring-cyan-300', astra.vayuShotsLeft > 0);
+          b2.disabled = astra.vayuCharges <= 0 && astra.vayuShotsLeft <= 0;
+        }
+        if (b3) {
+          b3.textContent = astra.agniActive ? '🔥 Agni ARMED (2×)' : `🔥 Agni 2× (${astra.agniCharges})`;
+          b3.classList.toggle('ring-2', astra.agniActive);
+          b3.classList.toggle('ring-orange-400', astra.agniActive);
+          b3.disabled = astra.agniCharges <= 0 && !astra.agniActive;
+        }
+      }
+
+      function activateDrishti() {
+        if (astra.drishtiCharges <= 0 || astra.drishtiTimer > 0) return;
+        astra.drishtiCharges--;
+        astra.drishtiTimer = 6.5;
+        playTone(528, 0.28, 'sine', 0.18, 0);
+        playTone(792, 0.35, 'triangle', 0.15, 0.08);
+        triggerDualRumble(70, 0.3, 0.5);
+        document.getElementById('shot-banner').innerHTML = '<span class="text-amber-300 font-black">DIVYA DRISHTI ACTIVE!</span> Target motion slowed 65% &amp; Sweet Spot widened for 6.5s!';
+        updateAstraHud();
+      }
+
+      function activateVayu() {
+        if (astra.vayuCharges <= 0 || astra.vayuShotsLeft > 0) return;
+        astra.vayuCharges--;
+        astra.vayuShotsLeft = 2;
+        state.wind = 0.0;
+        playTone(432, 0.25, 'sine', 0.16, 0);
+        playTone(648, 0.30, 'sine', 0.14, 0.07);
+        triggerDualRumble(60, 0.25, 0.4);
+        document.getElementById('shot-banner').innerHTML = '<span class="text-cyan-300 font-black">VAYU STAMBHANA!</span> Crosswind locked at 0.0 m/s for your next 2 shots!';
+        updateAstraHud();
+        updateUI();
+      }
+
+      function activateAgni() {
+        if (astra.agniCharges <= 0 || astra.agniActive) return;
+        astra.agniCharges--;
+        astra.agniActive = true;
+        playTone(320, 0.18, 'sawtooth', 0.16, 0);
+        playTone(640, 0.26, 'triangle', 0.18, 0.06);
+        triggerDualRumble(90, 0.5, 0.8);
+        document.getElementById('shot-banner').innerHTML = '<span class="text-orange-400 font-black">AGNI ASTRA ARMED!</span> Next hit earns 2.0× Solar Score Multiplier!';
+        updateAstraHud();
+      }
+
+      document.getElementById('pill-drishti')?.addEventListener('click', activateDrishti);
+      document.getElementById('pill-vayu')?.addEventListener('click', activateVayu);
+      document.getElementById('pill-agni')?.addEventListener('click', activateAgni);
+      window.addEventListener('keydown', e => {
+        if (e.code === 'Digit1') activateDrishti();
+        if (e.code === 'Digit2') activateVayu();
+        if (e.code === 'Digit3') activateAgni();
+      });
       // --- Main 60 FPS Animation Loop ---
       let lastTs = performance.now();
       function animate(ts) {
         requestAnimationFrame(animate);
         const dt = Math.min(0.05, (ts - lastTs) / 1000);
+        if (astra.drishtiTimer > 0) { astra.drishtiTimer = Math.max(0, astra.drishtiTimer - dt); updateAstraHud(); }
         lastTs = ts;
 
         // Keyboard fine aim (auto-scales to 0.002° precision ticks when 3.5x Scope is held)
@@ -1054,7 +1147,7 @@
           state.drawCharge = Math.min(1, state.drawCharge + dt * 0.72);
           const pct = Math.round(state.drawCharge * 100);
           const eq = getEquipped();
-          const sweet = state.drawCharge >= eq.sweetMin && state.drawCharge <= eq.sweetMax;
+          const pad = astra.drishtiTimer > 0 ? 0.14 : 0; const sweet = state.drawCharge >= (eq.sweetMin - pad) && state.drawCharge <= Math.min(0.99, eq.sweetMax + 0.02);
           const hud = document.getElementById('draw-hud');
           hud.classList.remove('hidden');
           document.getElementById('draw-bar').style.width = `${pct}%`;
@@ -1090,7 +1183,8 @@
         if (state.targetMode === 'moving') {
           gantryGroup.visible = false;
           railGroup.visible = true;
-          const mmSec = stageNow;
+          const slowFactor = astra.drishtiTimer > 0 ? 0.35 : 1.0;
+          const mmSec = stageNow * slowFactor;
           const ampX = Math.min(1.4, 0.55 + (stageNow - 1) * 0.18);
           const ampZ = Math.min(1.5, 0.35 + (stageNow - 1) * 0.2);
           const phase = ts * 0.001 * ((mmSec * 0.001) / ampX);
@@ -1102,7 +1196,8 @@
           railGroup.visible = false;
           gantryGroup.visible = true;
           gantryGroup.position.set(0, 0, -state.distance);
-          const mmSec = 4 + stageNow;
+          const slowFactorP = astra.drishtiTimer > 0 ? 0.35 : 1.0;
+          const mmSec = (4 + stageNow) * slowFactorP;
           const maxAng = Math.min(0.55, 0.32 + (stageNow - 1) * 0.04);
           const phase = ts * 0.001 * ((mmSec * 0.001) / (2.0 * maxAng));
           const sx = Math.sin(phase) * 1.15;
