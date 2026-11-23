@@ -34,7 +34,9 @@
           <option value="moving" class="bg-slate-900 text-amber-300">Moving: Straight Rail (1.25×)</option>
           <option value="pendulum" class="bg-slate-900 text-purple-300">Moving: Pendulum Arc (1.50×)</option>
         </select>
-                <button id="pill-drishti" type="button" title="Divya Drishti: Slow-Mo Target + Wide Sweet Spot (Key 1)" class="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/60 text-amber-200 font-bold cursor-pointer transition">👁 Divya Drishti (1)</button>
+                        <button id="pill-bulletcam" type="button" title="Toggle Slow-Motion Bullet/Arrow Flight Cam (Key B)" class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/20 hover:bg-indigo-500/35 border border-indigo-400/60 text-indigo-200 font-bold cursor-pointer transition">🎬 Bullet Cam: OFF</button>
+        <button id="pill-replay" type="button" title="Replay Last Shot Travel Path in Slow Motion (Key R)" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-500/60 text-slate-200 font-bold cursor-pointer transition disabled:opacity-40" disabled>↺ Replay</button>
+        <button id="pill-drishti" type="button" title="Divya Drishti: Slow-Mo Target + Wide Sweet Spot (Key 1)" class="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/60 text-amber-200 font-bold cursor-pointer transition">👁 Divya Drishti (1)</button>
         <button id="pill-vayu" type="button" title="Vayu Stambhana: Zero Wind Drift for 2 Shots (Key 2)" class="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/60 text-cyan-200 font-bold cursor-pointer transition">🌪 Vayu Lock (1)</button>
         <button id="pill-agni" type="button" title="Agni Astra: 2.0x Solar Score Multiplier Next Shot (Key 3)" class="text-xs px-2.5 py-0.5 rounded-full bg-orange-500/20 hover:bg-orange-500/35 border border-orange-400/60 text-orange-200 font-bold cursor-pointer transition">🔥 Agni 2× (1)</button>
         <button id="btn-armory" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/50 text-purple-200 font-semibold cursor-pointer">Bows (1/4)</button>
@@ -667,6 +669,10 @@
           -Math.cos(yw) * Math.cos(el) * v0
         );
         projState.steadyBonus = steadyBonus;
+        bulletCam.replaying = false;
+        clearFlightTrail();
+        bulletCam.lastShot = { startPos: projState.pos.clone(), startVel: projState.vel.clone(), wind: state.wind };
+        const repBtn = document.getElementById('pill-replay'); if (repBtn) repBtn.disabled = false;
 
         if (GAME_MODE === 'pistol') {
           recoilTimer = 0.14;
@@ -690,6 +696,14 @@
       }
 
       function resolveImpact(hitTarget) {
+        if (bulletCam.replaying) {
+          bulletCam.replaying = false;
+          state.flying = false;
+          projMesh.visible = false;
+          camera.position.set(0, 1.62, 0.35);
+          document.getElementById('shot-banner').innerHTML = '<span class="text-indigo-300 font-bold">Replay Complete.</span> Adjust sights or press <b>R</b> to replay again.';
+          return;
+        }
         state.flying = false;
         projMesh.visible = false;
         const banner = document.getElementById('shot-banner');
@@ -1127,6 +1141,72 @@
         if (e.code === 'Digit2') activateVayu();
         if (e.code === 'Digit3') activateAgni();
       });
+      // --- On-Request Slow-Motion Bullet/Arrow Travel Cam & Replay Trail ---
+      const bulletCam = {
+        enabled: false,
+        replaying: false,
+        lastShot: null,
+        trailPoints: []
+      };
+
+      const maxTrailPts = 140;
+      const trailPositions = new Float32Array(maxTrailPts * 3);
+      const trailGeo = new THREE.BufferGeometry();
+      trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+      trailGeo.setDrawRange(0, 0);
+      const trailLine = new THREE.Line(
+        trailGeo,
+        new THREE.LineBasicMaterial({ color: 0xfacc15, transparent: true, opacity: 0.92 })
+      );
+      scene.add(trailLine);
+
+      function clearFlightTrail() {
+        bulletCam.trailPoints.length = 0;
+        trailGeo.setDrawRange(0, 0);
+      }
+
+      function pushFlightTrailPoint(v) {
+        if (bulletCam.trailPoints.length >= maxTrailPts) bulletCam.trailPoints.shift();
+        bulletCam.trailPoints.push(v.clone());
+        const attr = trailGeo.attributes.position;
+        for (let i = 0; i < bulletCam.trailPoints.length; i++) {
+          const p = bulletCam.trailPoints[i];
+          attr.setXYZ(i, p.x, p.y, p.z);
+        }
+        attr.needsUpdate = true;
+        trailGeo.setDrawRange(0, bulletCam.trailPoints.length);
+      }
+
+      function toggleBulletCam() {
+        bulletCam.enabled = !bulletCam.enabled;
+        const btn = document.getElementById('pill-bulletcam');
+        if (btn) {
+          btn.textContent = bulletCam.enabled ? '🎬 Bullet Cam: ON' : '🎬 Bullet Cam: OFF';
+          btn.classList.toggle('ring-2', bulletCam.enabled);
+          btn.classList.toggle('ring-indigo-300', bulletCam.enabled);
+        }
+        playTone(bulletCam.enabled ? 740 : 480, 0.12, 'sine', 0.12);
+      }
+
+      function replayLastShotSlowMo() {
+        if (state.flying || !bulletCam.lastShot) return;
+        const s = bulletCam.lastShot;
+        bulletCam.replaying = true;
+        clearFlightTrail();
+        state.flying = true;
+        projMesh.visible = true;
+        projState.pos.copy(s.startPos);
+        projState.vel.copy(s.startVel);
+        projState.replayWind = s.wind;
+        document.getElementById('shot-banner').innerHTML = '<span class="text-indigo-300 font-black">SLOW-MO TRAJECTORY REPLAY</span> — Tracing exact flight curve &amp; wind drift...';
+      }
+
+      document.getElementById('pill-bulletcam')?.addEventListener('click', toggleBulletCam);
+      document.getElementById('pill-replay')?.addEventListener('click', replayLastShotSlowMo);
+      window.addEventListener('keydown', e => {
+        if (e.code === 'KeyB') toggleBulletCam();
+        if (e.code === 'KeyR') replayLastShotSlowMo();
+      });
       // --- Main 60 FPS Animation Loop ---
       let lastTs = performance.now();
       function animate(ts) {
@@ -1239,21 +1319,41 @@
           if (b.life <= 0 || b.mesh.position.y <= 0.02) { scene.remove(b.mesh); brassCasings.splice(i, 1); }
         }
 
-        // Projectile Flight & Target Plane Intersection
+        // Projectile Flight, Slow-Motion Bullet Cam & Glowing Path Trail
         if (state.flying) {
+          const slowActive = bulletCam.enabled || bulletCam.replaying;
+          const simDt = slowActive ? dt * 0.16 : dt;
+          const activeWind = bulletCam.replaying ? (projState.replayWind ?? state.wind) : state.wind;
           const prevZ = projState.pos.z;
-          projState.vel.x += state.wind * 0.65 * dt;
-          projState.vel.y -= 9.81 * dt;
-          projState.pos.addScaledVector(projState.vel, dt);
+
+          projState.vel.x += activeWind * 0.65 * simDt;
+          projState.vel.y -= 9.81 * simDt;
+          projState.pos.addScaledVector(projState.vel, simDt);
           projMesh.position.copy(projState.pos);
           projMesh.lookAt(projState.pos.clone().add(projState.vel));
+          pushFlightTrailPoint(projState.pos);
+
+          if (slowActive) {
+            // Smooth side-rear chase camera following the projectile in slow motion
+            const desiredCam = new THREE.Vector3(
+              projState.pos.x + 0.55,
+              Math.max(0.45, projState.pos.y + 0.25),
+              projState.pos.z + 2.4
+            );
+            camera.position.lerp(desiredCam, 0.18);
+            camera.lookAt(projState.pos.x, projState.pos.y, projState.pos.z - 4.0);
+          }
 
           const faceZ = targetGroup.position.z + 0.08;
           if (prevZ >= faceZ && projState.pos.z <= faceZ) {
+            camera.position.set(0, 1.62, 0.35);
             resolveImpact(true);
           } else if (projState.pos.y <= 0.02 || projState.pos.z < targetGroup.position.z - 15) {
+            camera.position.set(0, 1.62, 0.35);
             resolveImpact(false);
           }
+        } else {
+          camera.position.lerp(new THREE.Vector3(0, 1.62, 0.35), 0.2);
         }
 
         if (weaponAura.visible) weaponAura.rotation.z += dt * 0.9;
