@@ -112,7 +112,7 @@
 
       const state = {
         distance: 70, weight: 12, wind: 1.4, elevDeg: 5.5, yawDeg: 0.0,
-        score: 0, best: 0, shotNum: 1, maxShots: 5, baseMaxShots: 5, mulliganUsed: false,
+        score: 0, best: 0, shotNum: 1, maxShots: 5, baseMaxShots: 5, mulliganUsed: false, equippedBowId: localStorage.getItem('ramdhanu_equipped_bow') || 'bamboo', dailyMode: false, dailySeedState: 1,
         muted: false, flying: false, followTimer: 0, arrowPhys: null, hits: [], totalHits: 0, stageHits: 0, startDistance: 70, dragging: false, dragStart: null, audioCtx: null
       };
 
@@ -637,7 +637,7 @@
           }
         }
         state.shotNum += 1;
-        const maxWind = state.distance >= 120 ? 3.4 : 4.5; state.wind = Math.max(-maxWind, Math.min(maxWind, state.wind + (Math.random() - 0.5) * 1.1));
+        const maxWind = state.distance >= 120 ? 3.4 : 4.5; state.wind = Math.max(-maxWind, Math.min(maxWind, state.wind + (nextRangeRand() - 0.5) * 1.1));
         updateUI();
       }
 
@@ -739,6 +739,8 @@
       function animate(ts) {
         const rawDt = Math.min(0.033, (ts - (lastTs || ts)) / 1000); lastTs = ts;
         pollInputs(rawDt);
+        if (bowAuraRing.visible) bowAuraRing.rotation.z += rawDt * 0.9;
+        camWheels.forEach(w => { if (w.visible) w.rotation.x += rawDt * 2.5; });
 
         // Wind gust particles drift
         const wAttr = windGeo.attributes.position;
