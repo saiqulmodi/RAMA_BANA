@@ -1,498 +1,243 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RAMA_BANA 3D Archery — 50–100 m · 1–25 g · 2–10 mm Rings</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Ccircle cx='44' cy='20' r='14' fill='none' stroke='%2338bdf8' stroke-width='3'/%3E%3Ccircle cx='44' cy='20' r='8' fill='none' stroke='%23ef4444' stroke-width='3'/%3E%3Ccircle cx='44' cy='20' r='3.5' fill='%23facc15'/%3E%3Cpath d='M14 14 Q 34 32 14 50' fill='none' stroke='%23f59e0b' stroke-width='4.5' stroke-linecap='round'/%3E%3Cline x1='14' y1='14' x2='14' y2='50' stroke='%237dd3fc' stroke-width='1.8'/%3E%3Cline x1='10' y1='46' x2='41' y2='22' stroke='%23fde047' stroke-width='3' stroke-linecap='round'/%3E%3Cpolygon points='44,20 35,21 39,27' fill='%23facc15'/%3E%3C/svg%3E">
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>RAMA_BANA 3D Archery</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Ccircle cx='44' cy='20' r='14' fill='none' stroke='%2338bdf8' stroke-width='3'/%3E%3Ccircle cx='44' cy='20' r='8' fill='none' stroke='%23ef4444' stroke-width='3'/%3E%3Ccircle cx='44' cy='20' r='3.5' fill='%23facc15'/%3E%3Cpath d='M14 14 Q 34 32 14 50' fill='none' stroke='%23f59e0b' stroke-width='4.5' stroke-linecap='round'/%3E%3Cline x1='10' y1='46' x2='41' y2='22' stroke='%23fde047' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="var s=document.createElement('script');s.src='https://unpkg.com/three@0.128.0/build/three.min.js';document.head.appendChild(s);"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    body { font-family: 'Inter', system-ui, sans-serif; background: #090d16; color: #f8fafc; margin: 0; }
-    #stage-wrap canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+    html, body { margin: 0; padding: 0; overflow: hidden; background: #070d19; touch-action: none; user-select: none; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+    input[type=range] { accent-color: #f59e0b; }
   </style>
 </head>
-<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 select-none">
-  <header class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-slate-900 border-b border-slate-800">
-    <div class="flex items-center gap-3">
-      <span class="text-base sm:text-lg font-bold tracking-tight text-amber-400">RAMA_BANA 3D Archery</span>
-      <span id="hud-round" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-medium">Arrow 1 / 5</span>
+<body class="text-slate-100 font-sans antialiased">
+
+  <!-- Top Tournament HUD -->
+  <header class="fixed top-0 inset-x-0 z-30 pointer-events-none px-2.5 pt-2">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-1.5 bg-slate-950/80 backdrop-blur-md border border-slate-700/60 rounded-2xl px-3 py-1.5 shadow-xl pointer-events-auto">
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span class="font-black tracking-wide text-sm sm:text-base text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-cyan-300">RAMA_BANA</span>
+        <span id="hud-stage" class="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 font-bold tabular-nums">Stage 1 · 70m</span>
+        <span id="hud-shots" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 border border-slate-600/60 text-slate-200 font-semibold tabular-nums">Arrow 1/5</span>
+        <span id="hud-target-motion" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 border border-slate-600/50 text-slate-300 font-semibold tabular-nums">Target: Static</span>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span id="hud-score" class="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-200 font-extrabold tabular-nums">Score: 0</span>
+        <span id="hud-best" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 border border-slate-600/60 text-slate-300 font-semibold tabular-nums">Best: 0</span>
+        <span id="hud-streak" class="text-xs px-2 py-0.5 rounded-full bg-orange-950/90 border border-orange-400/50 text-orange-200 font-semibold tabular-nums">Streak: 1d</span>
+        <button id="btn-target-mode" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600/60 text-slate-200 font-semibold cursor-pointer">Target: Stationary</button>
+        <button id="btn-armory" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/50 text-purple-200 font-semibold cursor-pointer">Bows (1/4)</button>
+        <button id="btn-daily" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-200 font-semibold cursor-pointer">Mode: Tournament</button>
+        <button id="btn-mulligan" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 font-semibold cursor-pointer">+1 Arrow (1)</button>
+        <button id="btn-lb" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 font-semibold cursor-pointer">Top 5</button>
+        <button id="btn-mute" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600/60 text-slate-200 font-semibold cursor-pointer">Sound: ON</button>
+        <button id="btn-test-av" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600/60 text-cyan-200 font-semibold cursor-pointer">Test Audio</button>
+        <button id="btn-guide" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 font-semibold cursor-pointer">? Guide</button>
+        <button id="btn-reset" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold cursor-pointer">New Run</button>
+      </div>
     </div>
-    <div class="flex items-center gap-3 sm:gap-5 text-xs sm:text-sm">
-      <div>Score: <span id="hud-score" class="font-bold text-emerald-400 tabular-nums">0</span></div>
-      <div>Best: <span id="hud-best" class="font-bold text-amber-300 tabular-nums">0</span></div>
-      <button id="btn-mute" type="button" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition">Sound: ON</button> <button id="btn-test-av" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600/60 text-cyan-200 font-semibold transition cursor-pointer" title="Test bow audio and controller/mobile vibration">Test Audio &amp; Vibe</button> <button id="btn-guide" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 font-semibold transition cursor-pointer">? Guide</button>
-      <button id="btn-reset" type="button" class="px-2.5 py-1 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition">New Round</button>
+
+    <!-- Telemetry & Shot Feedback Banner -->
+    <div class="max-w-7xl mx-auto mt-1.5 flex flex-wrap items-center justify-between gap-2 px-1">
+      <div id="shot-banner" class="text-xs px-3 py-1 rounded-xl bg-slate-950/75 backdrop-blur border border-slate-700/60 text-slate-200 shadow pointer-events-auto">
+        Drag viewport or use <b>WASD / Arrows</b> to aim · Hold <b>Space</b> (or touch button) for Gold Sweet Spot (+15%).
+      </div>
+      <div class="flex items-center gap-2 text-xs px-3 py-1 rounded-xl bg-slate-950/75 backdrop-blur border border-slate-700/60 tabular-nums pointer-events-auto">
+        <span class="text-slate-400">Wind:</span>
+        <span id="hud-wind" class="font-bold text-cyan-300">+0.0 m/s →</span>
+        <span class="text-slate-600">|</span>
+        <span class="text-slate-400">Elev:</span>
+        <span id="hud-elev" class="font-bold text-emerald-300">+6.5°</span>
+        <span class="text-slate-600">|</span>
+        <span class="text-slate-400">Yaw:</span>
+        <span id="hud-yaw" class="font-bold text-amber-300">+0.0°</span>
+      </div>
     </div>
   </header>
 
-  <main class="flex-1 flex flex-col lg:flex-row gap-3 p-3 max-w-6xl w-full mx-auto">
-    <div id="stage-wrap" class="relative flex-1 min-h-[360px] sm:min-h-[450px] bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-lg">
-      <div class="pointer-events-none absolute top-3 left-3 bg-slate-950/75 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700/70 text-xs text-slate-200">
-        Drag to aim RAMA_BANA (up/down &amp; left/right), release to shoot!
-      </div>
-      <div class="pointer-events-none absolute top-3 right-3 bg-slate-950/85 backdrop-blur p-1.5 rounded-full border border-slate-700/80 shadow">
-        <canvas id="inset-canvas" width="116" height="116" class="block w-[108px] h-[108px] rounded-full"></canvas>
-      </div>
-      <div id="shot-banner" class="pointer-events-none hidden absolute bottom-3 left-3 right-3 sm:right-auto bg-slate-950/90 backdrop-blur px-3.5 py-2 rounded-lg border border-amber-500/40 text-xs sm:text-sm"></div>
+  <!-- Center Rangefinder Scope Overlay -->
+  <div id="scope-overlay" class="hidden fixed inset-0 z-20 pointer-events-none flex items-center justify-center">
+    <div class="w-64 h-64 sm:w-80 sm:h-80 rounded-full border-2 border-cyan-400/80 shadow-[0_0_0_9999px_rgba(3,7,18,0.62)] relative flex items-center justify-center">
+      <div class="absolute inset-x-0 h-px bg-cyan-400/40"></div>
+      <div class="absolute inset-y-0 w-px bg-cyan-400/40"></div>
+      <div class="w-3 h-3 rounded-full border border-rose-400"></div>
+      <span id="scope-readout" class="absolute bottom-5 text-[11px] font-bold px-2 py-0.5 rounded bg-slate-950/85 text-cyan-300 tabular-nums">3.5× OPTIC · 70m</span>
     </div>
+  </div>
 
-    <aside class="w-full lg:w-80 flex flex-col gap-3">
-      <div class="grid grid-cols-3 gap-2 bg-slate-900 p-3 rounded-xl border border-slate-800 text-center">
-        <div>
-          <div class="text-[11px] uppercase tracking-wider text-slate-400">Distance</div>
-          <div id="val-dist" class="text-base font-bold text-sky-400 tabular-nums">70 m</div>
+  <!-- Circular Draw / Breath Tension Arc Gauge -->
+  <div id="draw-hud" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-30 pointer-events-none flex flex-col items-center">
+    <div class="px-3.5 py-1.5 rounded-2xl bg-slate-950/85 border border-amber-400/60 shadow-xl text-center">
+      <div id="draw-label" class="text-xs font-extrabold tracking-wider text-amber-300 tabular-nums">CHARGE 0%</div>
+      <div class="w-40 h-2 mt-1 rounded-full bg-slate-800 overflow-hidden">
+        <div id="draw-bar" class="h-full bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-500 w-0 transition-none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Desktop Precision Tuning Drawer (Bottom Right) -->
+  <aside class="hidden sm:flex fixed bottom-3 right-3 z-30 flex-col gap-2 w-64 bg-slate-950/80 backdrop-blur-md border border-slate-700/60 rounded-2xl p-3 text-xs shadow-2xl">
+    <div class="flex items-center justify-between">
+      <span class="font-bold text-slate-300">Elevation Angle</span>
+      <span id="lbl-elev" class="font-mono text-emerald-300">6.5°</span>
+    </div>
+    <input id="in-elev" type="range" min="0.5" max="26" step="0.1" value="6.5" class="w-full cursor-pointer" />
+
+    <div class="flex items-center justify-between">
+      <span class="font-bold text-slate-300">Windage Yaw</span>
+      <span id="lbl-yaw" class="font-mono text-amber-300">0.0°</span>
+    </div>
+    <input id="in-yaw" type="range" min="-6" max="6" step="0.1" value="0" class="w-full cursor-pointer" />
+
+    <div class="flex items-center justify-between">
+      <span class="font-bold text-slate-300">Draw Weight</span>
+      <span id="lbl-weight" class="font-mono text-cyan-300">42 lbs</span>
+    </div>
+    <input id="in-weight" type="range" min="25" max="70" step="1" value="42" class="w-full cursor-pointer" />
+
+    <div class="flex gap-1.5 pt-1">
+      <button id="btn-scope-desk" type="button" class="flex-1 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 font-bold text-cyan-200 cursor-pointer">Hold Scope (Shift)</button>
+      <button id="btn-fire-desk" type="button" class="flex-1 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold cursor-pointer">Loose Arrow</button>
+    </div>
+  </aside>
+
+  <!-- Mobile 1-Thumb Touch Action Bar -->
+  <div id="mobile-touch-bar" class="sm:hidden fixed bottom-2 inset-x-2 z-30 flex items-center gap-1.5 bg-slate-950/85 backdrop-blur-md border border-slate-700/70 rounded-2xl p-1.5 shadow-2xl">
+    <button id="btn-touch-scope" type="button" class="flex-1 py-2.5 px-2 rounded-xl bg-slate-800 active:bg-slate-700 border border-cyan-500/40 text-xs font-bold text-cyan-200 touch-none">Scope 3.5×</button>
+    <button id="btn-touch-draw" type="button" class="flex-[1.5] py-2.5 px-3 rounded-xl bg-amber-400 active:bg-amber-300 text-xs font-black text-slate-950 uppercase tracking-wide shadow-lg touch-none">Hold &amp; Loose Arrow</button>
+    <button id="btn-touch-mulligan" type="button" class="py-2.5 px-2.5 rounded-xl bg-emerald-900/90 active:bg-emerald-700 border border-emerald-400/50 text-xs font-extrabold text-emerald-200 touch-none">+1</button>
+  </div>
+
+  <!-- Quick Aim Guide Modal -->
+  <div id="guide-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
+    <div class="w-full max-w-md rounded-2xl bg-slate-900 border border-cyan-400/50 shadow-2xl p-5 text-slate-100">
+      <h2 class="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-cyan-300">RAMA_BANA Quick Aim Guide</h2>
+      <div class="mt-3 space-y-2.5 text-xs text-slate-300">
+        <div class="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700">
+          <div class="font-bold text-cyan-300">1. Aim &amp; Optical Scope (3.5×)</div>
+          <p class="mt-0.5">Drag anywhere on the 3D field (or use <b>WASD / Arrows</b>) to align the trajectory arc against crosswind. Hold <b>Right-Click / Shift / Scope</b> to zoom 3.5×.</p>
         </div>
-        <div>
-          <div class="text-[11px] uppercase tracking-wider text-slate-400">Wind</div>
-          <div id="val-wind" class="text-base font-bold text-cyan-300 tabular-nums">+1.4 m/s</div>
+        <div class="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700">
+          <div class="font-bold text-amber-300">2. Gold Sweet-Spot Release (+15% Score)</div>
+          <p class="mt-0.5">Hold <b>Space</b> (or slide your thumb on the gold mobile button) until the charge bar enters the <b>Gold Sweet Spot</b>, then release.</p>
         </div>
-        <div>
-          <div class="text-[11px] uppercase tracking-wider text-slate-400">Last Drop</div>
-          <div id="val-drop" class="text-base font-bold text-amber-300 tabular-nums">—</div>
+        <div class="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700">
+          <div class="font-bold text-emerald-300">3. Clear 5 Hits → +25m Range &amp; Unlock Gear</div>
+          <p class="mt-0.5">Hit 5 shots per stage to advance +25m, earn +1 permanent reserve shot, and switch between <b>Stationary</b>, <b>Rail Move (1.25×)</b>, and <b>Pendulum (1.50×)</b>.</p>
         </div>
       </div>
+      <button id="btn-close-guide" type="button" class="mt-4 w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-cyan-400 text-slate-950 font-black text-sm cursor-pointer">Enter Range</button>
+    </div>
+  </div>
 
-      <div class="bg-slate-900 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-2.5">
-        <div class="flex items-center justify-between">
-          <label for="in-weight" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Arrow Weight (1–25 g)</label>
-          <span id="lbl-weight" class="text-sm font-bold text-amber-400 tabular-nums">12 g</span>
-        </div>
-        <input id="in-weight" type="range" min="1" max="25" step="1" value="12" class="w-full accent-amber-400 cursor-pointer">
-        <div class="grid grid-cols-3 gap-1.5 text-[11px]">
-          <button type="button" data-w="5" class="preset-w py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium">5 g Light</button>
-          <button type="button" data-w="12" class="preset-w py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium">12 g Mid</button>
-          <button type="button" data-w="22" class="preset-w py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium">22 g Heavy</button>
-        </div>
-        <div id="weight-note" class="text-xs text-slate-400">Balanced flight · 61 m/s · 1.23× score</div>
+  <!-- Armory Modal -->
+  <div id="armory-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
+    <div class="w-full max-w-lg rounded-2xl bg-slate-900 border border-purple-400/50 shadow-2xl p-5">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h2 class="text-lg font-black text-purple-300">RAMA_BANA 3D Armory</h2>
+        <button id="btn-close-armory" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 text-xs font-bold cursor-pointer">Close</button>
       </div>
+      <div id="armory-list" class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs"></div>
+    </div>
+  </div>
 
-      <div class="bg-slate-900 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-2">
-        <div class="flex items-center justify-between">
-          <label for="in-dist" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Distance (50–100 m)</label>
-          <span id="lbl-dist" class="text-sm font-bold text-sky-400 tabular-nums">70 m</span>
-        </div>
-        <input id="in-dist" type="range" min="50" max="100" step="5" value="70" class="w-full accent-sky-400 cursor-pointer">
-
-        <div class="flex items-center justify-between mt-1">
-          <label for="in-elev" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Elevation (Pitch)</label>
-          <span id="lbl-elev" class="text-sm font-bold text-emerald-400 tabular-nums">+5.5°</span>
-        </div>
-        <input id="in-elev" type="range" min="0.5" max="15.0" step="0.1" value="5.5" class="w-full accent-emerald-400 cursor-pointer">
-
-        <div class="flex items-center justify-between mt-1">
-          <label for="in-yaw" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Windage (Left / Right)</label>
-          <span id="lbl-yaw" class="text-sm font-bold text-cyan-300 tabular-nums">0.0°</span>
-        </div>
-        <input id="in-yaw" type="range" min="-5.0" max="5.0" step="0.1" value="0.0" class="w-full accent-cyan-400 cursor-pointer">
-
-        <button id="btn-shoot" type="button" class="mt-1.5 w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition shadow">
-          Loose RAMA_BANA Arrow
-        </button>
+  <!-- Top 5 Leaderboard Modal -->
+  <div id="lb-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
+    <div class="w-full max-w-md rounded-2xl bg-slate-900 border border-amber-400/50 shadow-2xl p-5">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h2 class="text-lg font-black text-amber-300">RAMA_BANA Top 5 Tournament</h2>
+        <button id="btn-close-lb" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 text-xs font-bold cursor-pointer">Close</button>
       </div>
+      <div id="lb-list" class="mt-3 space-y-2 text-xs"></div>
+    </div>
+  </div>
 
-      <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-xs">
-        <div class="font-semibold text-slate-300 mb-1.5">Circular Target Rings (at <span id="ref-dist">70</span> m)</div>
-        <div class="grid grid-cols-2 gap-y-1 text-slate-400">
-          <span class="text-amber-300 font-medium">2 mm Bullseye (10×)</span><span id="ring-2" class="text-right font-semibold text-slate-200 tabular-nums">860 pts</span>
-          <span>4 mm Ring (7.5×)</span><span id="ring-4" class="text-right tabular-nums">645 pts</span>
-          <span>6 mm Ring (5.0×)</span><span id="ring-6" class="text-right tabular-nums">430 pts</span>
-          <span>8 mm Ring (2.5×)</span><span id="ring-8" class="text-right tabular-nums">215 pts</span>
-          <span>10 mm Ring (1.0×)</span><span id="ring-10" class="text-right tabular-nums">86 pts</span>
-        </div>
+  <!-- End-of-Run Tournament Scorecard Modal -->
+  <div id="scorecard-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
+    <div class="w-full max-w-md rounded-2xl bg-slate-900 border border-amber-400/50 shadow-2xl p-5 text-center">
+      <div class="text-xs font-bold uppercase tracking-widest text-rose-400">Run Complete</div>
+      <div id="sc-score" class="mt-1 text-3xl font-black text-amber-300 tabular-nums">0 PTS</div>
+      <div id="sc-sub" class="text-xs text-cyan-300 font-semibold mt-0.5">Stage 1 · 70m</div>
+      <div class="mt-3 grid grid-cols-3 gap-2 text-xs">
+        <div class="p-2 rounded-xl bg-slate-800"><div class="text-slate-400">Accuracy</div><div id="sc-acc" class="font-extrabold mt-0.5">0%</div></div>
+        <div class="p-2 rounded-xl bg-slate-800"><div class="text-slate-400">Bullseyes</div><div id="sc-bull" class="font-extrabold text-amber-300 mt-0.5">0</div></div>
+        <div class="p-2 rounded-xl bg-slate-800"><div class="text-slate-400">Streak</div><div id="sc-str" class="font-extrabold text-emerald-300 mt-0.5">0×</div></div>
       </div>
-    </aside>
-  </main>
+      <div class="mt-4 flex gap-2">
+        <button id="btn-copy-score" type="button" class="flex-1 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-xs cursor-pointer">Copy Challenge Score</button>
+        <button id="btn-close-sc" type="button" class="flex-1 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs cursor-pointer">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="canvas-wrap"></div>
 
   <script>
-    (function () {
-      const stageWrap = document.getElementById('stage-wrap');
-      const insetCanvas = document.getElementById('inset-canvas');
-      const insetCtx = insetCanvas.getContext('2d');
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof THREE === 'undefined') {
+        document.getElementById('shot-banner').innerHTML = '<span class="text-rose-400 font-bold">Three.js CDN failed to load. Check internet connection and refresh.</span>';
+        return;
+      }
+
+      const GAME_MODE = 'archery'; // 'archery' | 'pistol'
+      const STORAGE_PREFIX = 'rama_bana_';
+      const SHARE_URL = 'https://saiqulmodi.github.io/RAMA_BANA/';
+
+      const CATALOG = GAME_MODE === 'pistol' ? [
+        { id: 'w1', name: '10m Olympic Air Pistol', unlock: 'Starter Sidearm', req: () => true, speedMult: 1.00, sweetMin: 0.80, sweetMax: 0.96, color: 0x334155, accent: 0x22c55e, aura: false, perk: 'Precision balance · Sweet Spot 80-96%' },
+        { id: 'w2', name: '9mm Match Tactical', unlock: 'Reach Stage 3 (120m)', req: s => s.bestStage >= 3, speedMult: 1.05, sweetMin: 0.76, sweetMax: 0.97, color: 0x0f172a, accent: 0x38bdf8, aura: false, perk: '+5% Muzzle Velocity · Wide Sweet Spot' },
+        { id: 'w3', name: '.357 Magnum Heavy', unlock: 'Reach Stage 5 (170m)', req: s => s.bestStage >= 5, speedMult: 1.10, sweetMin: 0.78, sweetMax: 0.97, color: 0x94a3b8, accent: 0xf59e0b, aura: false, perk: '+10% Velocity · High Wind Stability' },
+        { id: 'w4', name: 'Golden Sovereign Custom', unlock: 'Stage 7 or 10,000+ Score', req: s => s.bestStage >= 7 || s.best >= 10000, speedMult: 1.14, sweetMin: 0.74, sweetMax: 0.98, color: 0xfacc15, accent: 0xef4444, aura: true, perk: '+14% Velocity · Master Reflex Optic' }
+      ] : [
+        { id: 'w1', name: 'RAMA_BANA Bamboo', unlock: 'Starter Bow', req: () => true, speedMult: 1.00, sweetMin: 0.80, sweetMax: 0.96, color: 0xd97706, accent: 0x7dd3fc, aura: false, perk: 'Balanced limbs · Sweet Spot 80-96%' },
+        { id: 'w2', name: 'Golden Imperial Recurve', unlock: 'Reach Stage 3 (120m)', req: s => s.bestStage >= 3, speedMult: 1.04, sweetMin: 0.76, sweetMax: 0.97, color: 0xfacc15, accent: 0xef4444, aura: false, perk: '+4% Arrow Speed · Wide Sweet Spot' },
+        { id: 'w3', name: 'Vajra Carbon Compound', unlock: 'Reach Stage 5 (170m)', req: s => s.bestStage >= 5, speedMult: 1.09, sweetMin: 0.78, sweetMax: 0.97, color: 0x1e293b, accent: 0x22d3ee, aura: false, perk: '+9% Arrow Velocity · Twin Cam Pulleys' },
+        { id: 'w4', name: 'Celestial Sovereign', unlock: 'Stage 7 or 10,000+ Score', req: s => s.bestStage >= 7 || s.best >= 10000, speedMult: 1.13, sweetMin: 0.74, sweetMax: 0.98, color: 0xc084fc, accent: 0xfef08a, aura: true, perk: '+13% Velocity · Master Sweet Spot' }
+      ];
 
       const state = {
-        distance: 70, weight: 12, wind: 1.4, elevDeg: 5.5, yawDeg: 0.0,
-        score: 0, best: 0, shotNum: 1, maxShots: 5, baseMaxShots: 5, mulliganUsed: false, equippedBowId: localStorage.getItem('RAMA_BANA_equipped_bow') || 'bamboo', dailyMode: false, dailySeedState: 1, runShots: 0, runBullseyes: 0, runBestStreak: 0,
-        muted: false, flying: false, followTimer: 0, arrowPhys: null, hits: [], totalHits: 0, stageHits: 0, startDistance: 70, dragging: false, dragStart: null, audioCtx: null
+        distance: 70,
+        startDistance: 70,
+        elevDeg: GAME_MODE === 'pistol' ? 1.4 : 6.5,
+        yawDeg: 0,
+        weight: GAME_MODE === 'pistol' ? 125 : 42,
+        wind: 1.2,
+        score: 0,
+        best: Number(localStorage.getItem(STORAGE_PREFIX + 'best') || 0),
+        bestStage: Number(localStorage.getItem(STORAGE_PREFIX + 'best_stage') || 1),
+        shotNum: 1,
+        stageHits: 0,
+        totalHits: 0,
+        baseMaxShots: 5,
+        maxShots: 5,
+        mulliganUsed: false,
+        streak: 0,
+        runShots: 0,
+        runBullseyes: 0,
+        runBestStreak: 0,
+        dragging: false,
+        drawCharge: 0,
+        scoped: false,
+        flying: false,
+        followTimer: 0,
+        targetMode: localStorage.getItem(STORAGE_PREFIX + 'target_mode') || 'stationary',
+        equippedId: localStorage.getItem(STORAGE_PREFIX + 'equipped') || 'w1',
+        dailyMode: false,
+        dailySeed: 1,
+        muted: false,
+        audioCtx: null
       };
 
-      try { state.best = parseInt(localStorage.getItem('RAMA_BANA_best') || '0', 10) || 0; } catch (e) {}
-
-      const scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x1e1b3a, 0.0042);
-
-      const camera = new THREE.PerspectiveCamera(48, 16 / 9, 0.1, 450);
-      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-      renderer.setPixelRatio(window.devicePixelRatio || 1);
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      stageWrap.prepend(renderer.domElement);
-
-      const skyGeo = new THREE.SphereGeometry(240, 32, 24);
-      const skyMat = new THREE.ShaderMaterial({
-        side: THREE.BackSide,
-        depthWrite: false,
-        uniforms: {
-          topColor: { value: new THREE.Color(0x0b132b) },
-          midColor: { value: new THREE.Color(0x4c1d95) },
-          horizonColor: { value: new THREE.Color(0xf97316) }
-        },
-        vertexShader: `
-          varying vec3 vWorldPos;
-          void main() {
-            vec4 wp = modelMatrix * vec4(position, 1.0);
-            vWorldPos = wp.xyz;
-            gl_Position = projectionMatrix * viewMatrix * wp;
-          }
-        `,
-        fragmentShader: `
-          uniform vec3 topColor;
-          uniform vec3 midColor;
-          uniform vec3 horizonColor;
-          varying vec3 vWorldPos;
-          void main() {
-            float h = normalize(vWorldPos).y;
-            vec3 col = mix(horizonColor, midColor, smoothstep(0.0, 0.22, max(h, 0.0)));
-            col = mix(col, topColor, smoothstep(0.22, 0.72, max(h, 0.0)));
-            gl_FragColor = vec4(col, 1.0);
-          }
-        `
-      });
-      scene.add(new THREE.Mesh(skyGeo, skyMat));
-
-      const sunDisc = new THREE.Mesh(new THREE.CircleGeometry(11, 32), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
-      sunDisc.position.set(28, 22, -195);
-      scene.add(sunDisc);
-
-      scene.add(new THREE.HemisphereLight(0xfdba74, 0x14532d, 0.75));
-      const sun = new THREE.DirectionalLight(0xffedd5, 1.45);
-      sun.position.set(24, 34, 18);
-      sun.castShadow = true;
-      sun.shadow.mapSize.width = 2048;
-      sun.shadow.mapSize.height = 2048;
-      sun.shadow.camera.near = 2;
-      sun.shadow.camera.far = 170;
-      sun.shadow.camera.left = -28;
-      sun.shadow.camera.right = 28;
-      sun.shadow.camera.top = 24;
-      sun.shadow.camera.bottom = -120;
-      scene.add(sun);
-
-      const ground = new THREE.Mesh(new THREE.PlaneGeometry(180, 260), new THREE.MeshLambertMaterial({ color: 0x166534 }));
-      ground.rotation.x = -Math.PI / 2;
-      ground.position.set(0, 0, -90);
-      ground.receiveShadow = true;
-      scene.add(ground);
-
-      for (let m = 20; m <= 100; m += 20) {
-        const line = new THREE.Mesh(new THREE.PlaneGeometry(16, 0.18), new THREE.MeshBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.45 }));
-        line.rotation.x = -Math.PI / 2;
-        line.position.set(0, 0.02, -m);
-        scene.add(line);
+      function getEquipped() {
+        const w = CATALOG.find(x => x.id === state.equippedId);
+        return (w && w.req(state)) ? w : CATALOG[0];
       }
 
-      const mtnMat = new THREE.MeshLambertMaterial({ color: 0x312e81 });
-      [
-        { x: -55, z: -165, r: 34, h: 28 }, { x: -12, z: -175, r: 40, h: 35 },
-        { x: 35, z: -170, r: 36, h: 30 }, { x: 75, z: -160, r: 32, h: 25 }
-      ].forEach(m => {
-        const cone = new THREE.Mesh(new THREE.ConeGeometry(m.r, m.h, 7), mtnMat);
-        cone.position.set(m.x, m.h / 2 - 1, m.z);
-        scene.add(cone);
-      });
-
-      const trunkMat = new THREE.MeshLambertMaterial({ color: 0x78350f });
-      const leafMat = new THREE.MeshLambertMaterial({ color: 0x14532d });
-      for (let z = -15; z >= -125; z -= 18) {
-        [-14, 14].forEach((side, idx) => {
-          const tree = new THREE.Group();
-          const xOff = side + (idx === 0 ? -Math.abs(Math.sin(z) * 4) : Math.abs(Math.cos(z) * 4));
-          const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.32, 2.2, 8), trunkMat);
-          trunk.position.y = 1.1; trunk.castShadow = true; tree.add(trunk);
-          const crown1 = new THREE.Mesh(new THREE.ConeGeometry(1.8, 3.6, 8), leafMat);
-          crown1.position.y = 3.2; crown1.castShadow = true; tree.add(crown1);
-          const crown2 = new THREE.Mesh(new THREE.ConeGeometry(1.3, 2.8, 8), leafMat);
-          crown2.position.y = 4.6; crown2.castShadow = true; tree.add(crown2);
-          tree.position.set(xOff, 0, z);
-          scene.add(tree);
-        });
-      }
-
-      const bowGroup = new THREE.Group();
-      bowGroup.position.set(0.32, 1.48, -0.55);
-      scene.add(bowGroup);
-
-      const goldMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.82, roughness: 0.2 });
-      const crimsonMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.45, metalness: 0.25 });
-      const auraMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-
-      const bowCurve = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(0, 0.72, 0.22), new THREE.Vector3(0, 0.50, -0.10),
-        new THREE.Vector3(0, 0.16, 0.02), new THREE.Vector3(0, 0, 0.04),
-        new THREE.Vector3(0, -0.16, 0.02), new THREE.Vector3(0, -0.50, -0.10),
-        new THREE.Vector3(0, -0.72, 0.22)
-      ]);
-      const bowMesh = new THREE.Mesh(new THREE.TubeGeometry(bowCurve, 64, 0.024, 14, false), goldMat);
-      bowMesh.castShadow = true;
-      bowGroup.add(bowMesh);
-
-      const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.033, 0.033, 0.22, 14), crimsonMat);
-      grip.position.set(0, 0, 0.036);
-      bowGroup.add(grip);
-
-      [0.72, -0.72].forEach(yPos => {
-        const finial = new THREE.Mesh(new THREE.SphereGeometry(0.034, 12, 12), auraMat);
-        finial.position.set(0, yPos, 0.22);
-        bowGroup.add(finial);
-      });
-
-      const stringGeo = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(0, 0.72, 0.22), new THREE.Vector3(0, 0, 0.30), new THREE.Vector3(0, -0.72, 0.22)
-      ]);
-      bowGroup.add(new THREE.Line(stringGeo, new THREE.LineBasicMaterial({ color: 0x7dd3fc })));
-
-      function createArrowMesh() {
-        const g = new THREE.Group();
-        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.92, 10), new THREE.MeshStandardMaterial({ color: 0xfde047, metalness: 0.45, roughness: 0.25 }));
-        shaft.rotation.x = Math.PI / 2; shaft.castShadow = true; g.add(shaft);
-        const tip = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.1, 10), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.85, roughness: 0.18 }));
-        tip.rotation.x = -Math.PI / 2; tip.position.z = -0.5; g.add(tip);
-        for (let i = 0; i < 3; i++) {
-          const fin = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.006, 0.14), auraMat);
-          fin.position.z = 0.36; fin.rotation.z = (i * Math.PI * 2) / 3; g.add(fin);
-        }
-        return g;
-      }
-
-      const nockedArrow = createArrowMesh();
-      nockedArrow.position.set(0, 0, -0.14);
-      bowGroup.add(nockedArrow);
-
-      const flyingArrowMesh = createArrowMesh();
-      flyingArrowMesh.visible = false;
-      scene.add(flyingArrowMesh);
-
-      const targetGroup = new THREE.Group();
-      scene.add(targetGroup);
-
-      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 1.9, 12), new THREE.MeshLambertMaterial({ color: 0x78350f }));
-      post.position.set(0, 0.95, 0); post.castShadow = true; targetGroup.add(post);
-
-      const board = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.15, 0.14, 40), new THREE.MeshLambertMaterial({ color: 0xf8fafc }));
-      board.rotation.x = Math.PI / 2; board.position.set(0, 1.5, 0); board.castShadow = true; board.receiveShadow = true; targetGroup.add(board);
-
-      [
-        { r: 0.92, color: 0x38bdf8, z: 0.075 }, { r: 0.69, color: 0xef4444, z: 0.08 },
-        { r: 0.46, color: 0xfacc15, z: 0.085 }, { r: 0.23, color: 0xf59e0b, z: 0.09 }
-      ].forEach(ring => {
-        const disc = new THREE.Mesh(new THREE.CircleGeometry(ring.r, 40), new THREE.MeshBasicMaterial({ color: ring.color }));
-        disc.position.set(0, 1.5, ring.z); targetGroup.add(disc);
-      });
-
-      const flagPole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.4, 8), new THREE.MeshLambertMaterial({ color: 0x94a3b8 }));
-      flagPole.position.set(2.0, 1.2, 0); flagPole.castShadow = true; targetGroup.add(flagPole);
-
-      const windFlag = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.28, 0.03), new THREE.MeshBasicMaterial({ color: 0x22d3ee }));
-      windFlag.position.set(2.38, 2.25, 0); targetGroup.add(windFlag);
-
-      function addRangeMarkers() {
-        for (let dist = 70; dist <= 245; dist += 25) {
-          const canvas = document.createElement('canvas');
-          canvas.width = 256; canvas.height = 128;
-          const ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#0f172a';
-          ctx.fillRect(0, 0, 256, 128);
-          ctx.strokeStyle = dist >= 120 ? '#f59e0b' : '#22d3ee';
-          ctx.lineWidth = 8;
-          ctx.strokeRect(6, 6, 244, 116);
-          ctx.fillStyle = dist >= 120 ? '#fde047' : '#67e8f9';
-          ctx.font = 'bold 58px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(`${dist}m`, 128, 66);
-
-          const tex = new THREE.CanvasTexture(canvas);
-          const sign = new THREE.Mesh(
-            new THREE.PlaneGeometry(1.1, 0.55),
-            new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide })
-          );
-          sign.position.set(-2.35, 0.55, -dist);
-          sign.rotation.y = 0.35;
-          scene.add(sign);
-
-          const markerPost = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.025, 0.025, 0.6, 8),
-            new THREE.MeshLambertMaterial({ color: 0x64748b })
-          );
-          markerPost.position.set(-2.35, 0.3, -dist);
-          scene.add(markerPost);
-
-          const groundLine = new THREE.Mesh(
-            new THREE.PlaneGeometry(4.4, 0.08),
-            new THREE.MeshBasicMaterial({ color: dist >= 120 ? 0xf59e0b : 0x22d3ee, transparent: true, opacity: 0.45 })
-          );
-          groundLine.rotation.x = -Math.PI / 2;
-          groundLine.position.set(0, 0.015, -dist);
-          scene.add(groundLine);
-        }
-      }
-      addRangeMarkers();
-
-      // --- 1. RAMA_BANA 7-Color Rainbow Arrow Trail ---
-      const TRAIL_LEN = 26;
-      const trailPositions = new Float32Array(TRAIL_LEN * 3);
-      const trailColors = new Float32Array(TRAIL_LEN * 3);
-      const rainbowHex = [0xef4444, 0xf97316, 0xfacc15, 0x22c55e, 0x38bdf8, 0x6366f1, 0xd946ef];
-      for (let i = 0; i < TRAIL_LEN; i++) {
-        const c = new THREE.Color(rainbowHex[i % rainbowHex.length]);
-        trailColors[i * 3] = c.r; trailColors[i * 3 + 1] = c.g; trailColors[i * 3 + 2] = c.b;
-      }
-      const trailGeo = new THREE.BufferGeometry();
-      trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
-      trailGeo.setAttribute('color', new THREE.BufferAttribute(trailColors, 3));
-      const arrowTrail = new THREE.Line(
-        trailGeo,
-        new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.88 })
-      );
-      arrowTrail.visible = false;
-      scene.add(arrowTrail);
-
-      function resetArrowTrail(x, y, z) {
-        for (let i = 0; i < TRAIL_LEN; i++) {
-          trailPositions[i * 3] = x; trailPositions[i * 3 + 1] = y; trailPositions[i * 3 + 2] = z;
-        }
-        trailGeo.attributes.position.needsUpdate = true;
-        arrowTrail.visible = true;
-      }
-
-      function pushArrowTrail(x, y, z) {
-        for (let i = TRAIL_LEN - 1; i > 0; i--) {
-          trailPositions[i * 3] = trailPositions[(i - 1) * 3];
-          trailPositions[i * 3 + 1] = trailPositions[(i - 1) * 3 + 1];
-          trailPositions[i * 3 + 2] = trailPositions[(i - 1) * 3 + 2];
-        }
-        trailPositions[0] = x; trailPositions[1] = y; trailPositions[2] = z;
-        trailGeo.attributes.position.needsUpdate = true;
-      }
-
-      // --- 2. Animated Wind Gust Particles ---
-      const WIND_COUNT = 48;
-      const windPos = new Float32Array(WIND_COUNT * 3);
-      for (let i = 0; i < WIND_COUNT; i++) {
-        windPos[i * 3] = (Math.random() - 0.5) * 14;
-        windPos[i * 3 + 1] = 0.4 + Math.random() * 4.5;
-        windPos[i * 3 + 2] = -5 - Math.random() * 140;
-      }
-      const windGeo = new THREE.BufferGeometry();
-      windGeo.setAttribute('position', new THREE.BufferAttribute(windPos, 3));
-      const windParticles = new THREE.Points(
-        windGeo,
-        new THREE.PointsMaterial({ color: 0xbae6fd, size: 0.14, transparent: true, opacity: 0.55 })
-      );
-      scene.add(windParticles);
-
-      // --- 3. Floating 3D +pts Impact Popup ---
-      let activePopup = null;
-      function spawn3DPopup(text, colorHex, worldX, worldY, worldZ) {
-        if (activePopup) { scene.remove(activePopup.sprite); activePopup = null; }
-        const c = document.createElement('canvas');
-        c.width = 384; c.height = 128;
-        const ctx = c.getContext('2d');
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.beginPath(); ctx.roundRect(16, 20, 352, 88, 22); ctx.fill();
-        ctx.strokeStyle = colorHex; ctx.lineWidth = 5; ctx.stroke();
-        ctx.fillStyle = colorHex;
-        ctx.font = 'bold 42px sans-serif';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(text, 192, 66);
-        const tex = new THREE.CanvasTexture(c);
-        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
-        sprite.position.set(worldX, worldY + 1.35, worldZ + 0.3);
-        sprite.scale.set(2.4, 0.8, 1);
-        scene.add(sprite);
-        activePopup = { sprite, life: 1.4 };
-      }
-
-      // --- 4. Corner Spectator & Cheer/Inspection Pavilion ---
-      const cheerGroup = new THREE.Group();
-      cheerGroup.position.set(4.2, 0, -11.5);
-      cheerGroup.rotation.y = -0.55;
-      scene.add(cheerGroup);
-
-      // Bleacher deck & canopy
-      const deck = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.35, 2.2), new THREE.MeshLambertMaterial({ color: 0x78350f }));
-      deck.position.set(0, 0.18, 0); deck.receiveShadow = true; cheerGroup.add(deck);
-      const step2 = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.35, 1.1), new THREE.MeshLambertMaterial({ color: 0x92400e }));
-      step2.position.set(0, 0.52, -0.55); cheerGroup.add(step2);
-
-      // Judge inspection desk & banner
-      const desk = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.75, 0.65), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
-      desk.position.set(-1.55, 0.72, 0.55); cheerGroup.add(desk);
-
-      const cheerCrew = [];
-      const jerseyColors = [0xf59e0b, 0x38bdf8, 0xef4444, 0x10b981, 0xeab308, 0xa855f7, 0xf97316, 0x06b6d4];
-      for (let i = 0; i < 8; i++) {
-        const person = new THREE.Group();
-        const row = i < 4 ? 0 : 1;
-        const col = i % 4;
-        person.position.set(-1.5 + col * 1.05, row === 0 ? 0.36 : 0.70, row === 0 ? 0.35 : -0.45);
-
-        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.17, 0.55, 10), new THREE.MeshLambertMaterial({ color: jerseyColors[i] }));
-        body.position.y = 0.28; person.add(body);
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 12), new THREE.MeshLambertMaterial({ color: 0xfde68a }));
-        head.position.y = 0.68; person.add(head);
-
-        const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.34, 0.07), new THREE.MeshLambertMaterial({ color: jerseyColors[i] }));
-        leftArm.position.set(-0.2, 0.55, 0);
-        const pomL = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 8), new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0xfacc15 : 0x22d3ee }));
-        pomL.position.y = 0.2; leftArm.add(pomL);
-        person.add(leftArm);
-
-        const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.34, 0.07), new THREE.MeshLambertMaterial({ color: jerseyColors[i] }));
-        rightArm.position.set(0.2, 0.55, 0);
-        const pomR = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 8), new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0x22d3ee : 0xfacc15 }));
-        pomR.position.y = 0.2; rightArm.add(pomR);
-        person.add(rightArm);
-
-        cheerGroup.add(person);
-        cheerCrew.push({ person, leftArm, rightArm, baseY: person.position.y, phase: i * 0.75 });
-      }
-      let cheerBoostTimer = 0;
-
-      function triggerHaptic(ms, weak, strong) {
-        try {
-          if (navigator.vibrate) navigator.vibrate(ms);
-          const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-          for (const gp of pads) {
-            if (gp && gp.vibrationActuator) {
-              gp.vibrationActuator.playEffect('dual-rumble', { duration: ms, weakMagnitude: weak, strongMagnitude: strong });
-            }
-          }
-        } catch (e) {}
-      }
-
-      const stuckArrows = [];
-      function stickArrowOnTarget(hitX, hitY) {
-        const stuck = flyingArrowMesh.clone();
-        stuck.visible = true;
-        stuck.position.set(hitX, hitY, 0.60);
-        stuck.quaternion.copy(flyingArrowMesh.quaternion);
-        targetGroup.add(stuck);
-        stuckArrows.push(stuck);
-      }
-      function clearStuckArrows() {
-        while (stuckArrows.length) {
-          targetGroup.remove(stuckArrows.pop());
-        }
-      }
-
-      function positionTarget() {
-        targetGroup.position.set(0, 0, -state.distance);
-        windFlag.rotation.y = state.wind >= 0 ? 0 : Math.PI;
-        windFlag.scale.x = Math.max(0.35, Math.min(1.6, Math.abs(state.wind) / 2.2));
-      }
-
+      // --- Web Audio Synthesizer ---
       function initAudio() {
         if (!state.audioCtx) {
           const AC = window.AudioContext || window.webkitAudioContext;
@@ -500,355 +245,837 @@
         }
         if (state.audioCtx && state.audioCtx.state === 'suspended') state.audioCtx.resume();
       }
-
-      function playTone(freq, dur, type, gainVal) {
+      function playTone(freq, dur, type = 'sine', vol = 0.14, delay = 0) {
         if (state.muted) return;
         initAudio();
         if (!state.audioCtx) return;
-        const osc = state.audioCtx.createOscillator(), gain = state.audioCtx.createGain();
-        osc.type = type || 'sine';
-        osc.frequency.setValueAtTime(freq, state.audioCtx.currentTime);
-        gain.gain.setValueAtTime(gainVal || 0.12, state.audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, state.audioCtx.currentTime + dur);
-        osc.connect(gain); gain.connect(state.audioCtx.destination);
-        osc.start(); osc.stop(state.audioCtx.currentTime + dur);
+        const t = state.audioCtx.currentTime + delay;
+        const osc = state.audioCtx.createOscillator();
+        const g = state.audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(vol, t);
+        g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+        osc.connect(g); g.connect(state.audioCtx.destination);
+        osc.start(t); osc.stop(t + dur + 0.02);
+      }
+      function triggerHaptic(ms = 30) {
+        if (navigator.vibrate) navigator.vibrate(ms);
       }
 
-      function weightMult(w) { return 1 + ((w - 1) / 24) * 0.5; }
-      function launchSpeed(w) { return Math.sqrt((2 * 45) / ((w + 12) / 1000)); }
+      // --- Three.js Scene, Renderer & High-Fidelity Lighting ---
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0b172a);
+      scene.fog = new THREE.FogExp2(0x0b172a, 0.0032);
 
-      function drawInset() {
-        const w = insetCanvas.width, h = insetCanvas.height, cx = w / 2, cy = h / 2;
-        insetCtx.clearRect(0, 0, w, h);
+      const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 600);
+      camera.position.set(0, 1.62, 0.35);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.18;
+      document.getElementById('canvas-wrap').appendChild(renderer.domElement);
+
+      const hemiLight = new THREE.HemisphereLight(0x93c5fd, 0x14532d, 1.15);
+      scene.add(hemiLight);
+
+      const sunLight = new THREE.DirectionalLight(0xfef3c7, 1.85);
+      sunLight.position.set(28, 45, 22);
+      sunLight.castShadow = true;
+      sunLight.shadow.mapSize.set(2048, 2048);
+      sunLight.shadow.camera.near = 1;
+      sunLight.shadow.camera.far = 260;
+      const dCam = 45;
+      sunLight.shadow.camera.left = -dCam;
+      sunLight.shadow.camera.right = dCam;
+      sunLight.shadow.camera.top = dCam;
+      sunLight.shadow.camera.bottom = -dCam;
+      scene.add(sunLight);
+
+      // --- Textured Stadium Turf Fairway & Distance Markers ---
+      const turfCanvas = document.createElement('canvas');
+      turfCanvas.width = 512; turfCanvas.height = 512;
+      const tCtx = turfCanvas.getContext('2d');
+      tCtx.fillStyle = '#14532d';
+      tCtx.fillRect(0, 0, 512, 512);
+      tCtx.fillStyle = '#166534';
+      tCtx.fillRect(0, 0, 512, 256);
+      tCtx.fillStyle = 'rgba(255,255,255,0.06)';
+      for (let i = 0; i < 1600; i++) tCtx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
+      const turfTex = new THREE.CanvasTexture(turfCanvas);
+      turfTex.wrapS = turfTex.wrapT = THREE.RepeatWrapping;
+      turfTex.repeat.set(24, 140);
+
+      const ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(140, 420),
+        new THREE.MeshStandardMaterial({ map: turfTex, roughness: 0.86, metalness: 0.04 })
+      );
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.z = -190;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      // Shooting Deck Platform
+      const deck = new THREE.Mesh(
+        new THREE.BoxGeometry(4.2, 0.14, 2.4),
+        new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.65, metalness: 0.2 })
+      );
+      deck.position.set(0, 0.07, -0.3);
+      deck.receiveShadow = true;
+      scene.add(deck);
+
+      // Distance Yardage Lines & Wind Pennants along Range
+      const windPennants = [];
+      for (let dist = 25; dist <= 250; dist += 25) {
+        const line = new THREE.Mesh(
+          new THREE.PlaneGeometry(12, 0.16),
+          new THREE.MeshBasicMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.35 })
+        );
+        line.rotation.x = -Math.PI / 2;
+        line.position.set(0, 0.015, -dist);
+        scene.add(line);
+
+        [-6.5, 6.5].forEach(px => {
+          const pole = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.03, 0.04, 2.4, 8),
+            new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.7, roughness: 0.3 })
+          );
+          pole.position.set(px, 1.2, -dist);
+          scene.add(pole);
+
+          const flag = new THREE.Mesh(
+            new THREE.ConeGeometry(0.14, 0.65, 6),
+            new THREE.MeshStandardMaterial({ color: dist % 50 === 0 ? 0xf59e0b : 0x38bdf8, roughness: 0.5 })
+          );
+          flag.rotation.z = -Math.PI / 2;
+          flag.position.set(px + 0.32, 2.25, -dist);
+          scene.add(flag);
+          windPennants.push(flag);
+        });
+      }
+
+      // Scenic Pines & Distant Mountain Ridges
+      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.9 });
+      const foliageMat = new THREE.MeshStandardMaterial({ color: 0x064e3b, roughness: 0.85 });
+      for (let i = 0; i < 36; i++) {
+        const side = i % 2 === 0 ? -1 : 1;
+        const tx = side * (12 + (i % 5) * 4.5);
+        const tz = -15 - i * 8;
+        const tree = new THREE.Group();
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.32, 2.2, 8), trunkMat);
+        trunk.position.y = 1.1;
+        const crown = new THREE.Mesh(new THREE.ConeGeometry(1.7, 5.2, 8), foliageMat);
+        crown.position.y = 4.2;
+        crown.castShadow = true;
+        tree.add(trunk, crown);
+        tree.position.set(tx, 0, tz);
+        scene.add(tree);
+      }
+
+      const mtnMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.95 });
+      for (let i = -4; i <= 4; i++) {
+        const peak = new THREE.Mesh(new THREE.ConeGeometry(34, 48 + Math.abs(i) * 6, 6), mtnMat);
+        peak.position.set(i * 42, 22, -310);
+        scene.add(peak);
+      }
+
+      // --- 3D Target Assembly (10, 8, 6, 4, 2 Rings) ---
+      const targetGroup = new THREE.Group();
+      targetGroup.position.set(0, 1.55, -70);
+      scene.add(targetGroup);
+
+      const boardCanvas = document.createElement('canvas');
+      boardCanvas.width = 512; boardCanvas.height = 512;
+      const bCtx = boardCanvas.getContext('2d');
+      const rings = [
+        { r: 250, fill: '#f8fafc', text: '2', tCol: '#0f172a' },
+        { r: 200, fill: '#0f172a', text: '4', tCol: '#f8fafc' },
+        { r: 150, fill: '#0284c7', text: '6', tCol: '#ffffff' },
+        { r: 100, fill: '#dc2626', text: '8', tCol: '#ffffff' },
+        { r: 50,  fill: '#facc15', text: '10', tCol: '#0f172a' }
+      ];
+      rings.forEach(rg => {
+        bCtx.beginPath();
+        bCtx.arc(256, 256, rg.r, 0, Math.PI * 2);
+        bCtx.fillStyle = rg.fill;
+        bCtx.fill();
+        bCtx.lineWidth = 3;
+        bCtx.strokeStyle = '#334155';
+        bCtx.stroke();
+        bCtx.fillStyle = rg.tCol;
+        bCtx.font = 'bold 20px sans-serif';
+        bCtx.textAlign = 'center';
+        if (rg.text !== '10') bCtx.fillText(rg.text, 256, 256 - rg.r + 24);
+        else bCtx.fillText('10', 256, 263);
+      });
+
+      const targetTex = new THREE.CanvasTexture(boardCanvas);
+      const targetDisc = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.15, 1.15, 0.16, 40),
         [
-          { r: 52, color: '#f8fafc' }, { r: 41, color: '#38bdf8' },
-          { r: 31, color: '#ef4444' }, { r: 21, color: '#facc15' }, { r: 10, color: '#f59e0b' }
-        ].forEach(ring => {
-          insetCtx.beginPath(); insetCtx.arc(cx, cy, ring.r, 0, Math.PI * 2);
-          insetCtx.fillStyle = ring.color; insetCtx.fill();
-          insetCtx.strokeStyle = '#0f172a'; insetCtx.lineWidth = 1; insetCtx.stroke();
-        });
-        state.hits.forEach(hit => {
-          const hx = cx + Math.max(-52, Math.min(52, hit.dxMm * 10));
-          const hy = cy + Math.max(-52, Math.min(52, hit.dyMm * 10));
-          insetCtx.fillStyle = '#0f172a'; insetCtx.beginPath(); insetCtx.arc(hx, hy, 3.5, 0, Math.PI * 2); insetCtx.fill();
-          insetCtx.strokeStyle = '#ffffff'; insetCtx.lineWidth = 1; insetCtx.stroke();
-        });
+          new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 }),
+          new THREE.MeshStandardMaterial({ map: targetTex, roughness: 0.45 }),
+          new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 })
+        ]
+      );
+      targetDisc.rotation.x = Math.PI / 2;
+      targetDisc.castShadow = true;
+      targetGroup.add(targetDisc);
+
+      // Tripod Stand Legs
+      [-0.75, 0.75].forEach(lx => {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 2.2, 8), trunkMat);
+        leg.position.set(lx, -0.75, -0.15);
+        leg.rotation.z = lx > 0 ? 0.18 : -0.18;
+        targetGroup.add(leg);
+      });
+
+      // Ground Rail Track (Rail Mode) & Overhead Gantry (Pendulum Mode)
+      const railGroup = new THREE.Group();
+      railGroup.visible = false;
+      const railBar = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.05, 0.28), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.25 }));
+      railBar.position.y = 0.025;
+      const leftBump = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.32), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+      leftBump.position.set(-1.55, 0.08, 0);
+      const rightBump = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.32), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+      rightBump.position.set(1.55, 0.08, 0);
+      railGroup.add(railBar, leftBump, rightBump);
+      scene.add(railGroup);
+
+      const gantryGroup = new THREE.Group();
+      gantryGroup.visible = false;
+      const gMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.2 });
+      [-1.9, 1.9].forEach(gx => {
+        const p = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 4.7, 10), gMat);
+        p.position.set(gx, 2.35, 0);
+        gantryGroup.add(p);
+      });
+      const gTop = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.12, 0.14), gMat);
+      gTop.position.set(0, 4.65, 0);
+      const gRod = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.1, 8), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+      gRod.position.set(0, 3.55, 0);
+      gantryGroup.add(gTop, gRod);
+      scene.add(gantryGroup);
+
+      // --- 3D Player Weapon (Bow vs Match Pistol) ---
+      const weaponGroup = new THREE.Group();
+      weaponGroup.position.set(0.26, 1.42, -0.44);
+      scene.add(weaponGroup);
+
+      let bowLimbMesh = null, bowStringLine = null, pistolSlideMesh = null, muzzleFlashMesh = null;
+      const weaponAura = new THREE.Mesh(
+        new THREE.TorusGeometry(0.42, 0.008, 8, 40),
+        new THREE.MeshBasicMaterial({ color: 0xe879f9, transparent: true, opacity: 0.38 })
+      );
+      weaponAura.visible = false;
+      weaponGroup.add(weaponAura);
+
+      if (GAME_MODE === 'pistol') {
+        const grip = new THREE.Mesh(new THREE.BoxGeometry(0.036, 0.13, 0.055), new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.7 }));
+        grip.position.set(0, -0.065, 0.045); grip.rotation.x = 0.24;
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.026, 0.24), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.25 }));
+        frame.position.set(0, 0.005, -0.04);
+        pistolSlideMesh = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.036, 0.25), new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9, roughness: 0.18 }));
+        pistolSlideMesh.position.set(0, 0.034, -0.042);
+
+        const opticHood = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.022, 0.044), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 }));
+        opticHood.position.set(0, 0.028, 0.018);
+        const redDot = new THREE.Mesh(new THREE.SphereGeometry(0.0028, 8, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+        redDot.position.set(0, 0.029, 0.018);
+        pistolSlideMesh.add(opticHood, redDot);
+
+        muzzleFlashMesh = new THREE.Mesh(new THREE.ConeGeometry(0.048, 0.15, 10), new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.92 }));
+        muzzleFlashMesh.rotation.x = -Math.PI / 2;
+        muzzleFlashMesh.position.set(0, 0.034, -0.23);
+        muzzleFlashMesh.visible = false;
+
+        weaponGroup.add(grip, frame, pistolSlideMesh, muzzleFlashMesh);
+      } else {
+        const curve = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(0, -0.75, 0.22),
+          new THREE.Vector3(0, -0.35, -0.06),
+          new THREE.Vector3(0, 0, -0.14),
+          new THREE.Vector3(0, 0.35, -0.06),
+          new THREE.Vector3(0, 0.75, 0.22)
+        ]);
+        bowLimbMesh = new THREE.Mesh(
+          new THREE.TubeGeometry(curve, 32, 0.022, 10, false),
+          new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.45, roughness: 0.35 })
+        );
+        const sGeo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0, 0.75, 0.22),
+          new THREE.Vector3(0, 0, 0.22),
+          new THREE.Vector3(0, -0.75, 0.22)
+        ]);
+        bowStringLine = new THREE.Line(sGeo, new THREE.LineBasicMaterial({ color: 0x7dd3fc }));
+        weaponGroup.add(bowLimbMesh, bowStringLine);
+      }
+
+      // Dotted 3D Ballistic Trajectory Preview Arc
+      const arcPoints = Array.from({ length: 36 }, () => new THREE.Vector3());
+      const arcGeo = new THREE.BufferGeometry().setFromPoints(arcPoints);
+      const arcLine = new THREE.Line(arcGeo, new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 }));
+      scene.add(arcLine);
+
+      // Active Projectile & Stuck Hits
+      const projMesh = GAME_MODE === 'pistol'
+        ? new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), new THREE.MeshBasicMaterial({ color: 0xfef08a }))
+        : (() => {
+            const g = new THREE.Group();
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.85, 8), new THREE.MeshStandardMaterial({ color: 0xfde047 }));
+            shaft.rotation.x = Math.PI / 2;
+            const tip = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.07, 8), new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 }));
+            tip.rotation.x = -Math.PI / 2;
+            tip.position.z = -0.45;
+            g.add(shaft, tip);
+            return g;
+          })();
+      projMesh.visible = false;
+      scene.add(projMesh);
+
+      const stuckGroup = new THREE.Group();
+      targetGroup.add(stuckGroup);
+
+      const brassCasings = [];
+      let recoilTimer = 0;
+      const projState = { pos: new THREE.Vector3(), vel: new THREE.Vector3() };
+
+      function launchVelocity() {
+        const eq = getEquipped();
+        if (GAME_MODE === 'pistol') return (310 + (state.weight - 90) * 1.4) * eq.speedMult;
+        return (48 + (state.weight - 25) * 0.85) * eq.speedMult;
+      }
+
+      function updateTrajectoryArc() {
+        const v0 = launchVelocity() * (state.dragging ? (0.6 + state.drawCharge * 0.45) : 1.0);
+        const el = THREE.MathUtils.degToRad(state.elevDeg);
+        const yw = THREE.MathUtils.degToRad(state.yawDeg);
+        const vx0 = Math.sin(yw) * Math.cos(el) * v0;
+        const vy0 = Math.sin(el) * v0;
+        const vz0 = -Math.cos(yw) * Math.cos(el) * v0;
+        const tTotal = Math.min(2.6, state.distance / Math.max(15, Math.abs(vz0)));
+        const posAttr = arcGeo.attributes.position;
+        for (let i = 0; i < 36; i++) {
+          const t = (i / 35) * tTotal;
+          const x = weaponGroup.position.x + vx0 * t + 0.5 * (state.wind * 0.65) * t * t;
+          const y = weaponGroup.position.y + vy0 * t - 0.5 * 9.81 * t * t;
+          const z = weaponGroup.position.z + vz0 * t;
+          posAttr.setXYZ(i, x, Math.max(0.02, y), z);
+        }
+        posAttr.needsUpdate = true;
+      }
+
+      function applyEquippedVisuals() {
+        const eq = getEquipped();
+        weaponAura.visible = eq.aura;
+        if (bowLimbMesh) bowLimbMesh.material.color.setHex(eq.color);
+        if (bowStringLine) bowStringLine.material.color.setHex(eq.accent);
+        if (pistolSlideMesh) pistolSlideMesh.material.color.setHex(eq.color);
+        const unlockedCount = CATALOG.filter(x => x.req(state)).length;
+        const btn = document.getElementById('btn-armory');
+        if (btn) btn.textContent = `Bows (${unlockedCount}/4)`;
       }
 
       function updateUI() {
-        document.getElementById('hud-score').textContent = state.score.toLocaleString();
-        document.getElementById('hud-best').textContent = state.best.toLocaleString();
-        document.getElementById('hud-round').textContent = state.shotNum <= state.maxShots ? `Arrow ${state.shotNum} / ${state.maxShots}` : 'Round Complete';
-        document.getElementById('val-dist').textContent = `${state.distance} m`;
-        document.getElementById('val-wind').textContent = `${state.wind >= 0 ? '+' : ''}${state.wind.toFixed(1)} m/s`;
-        document.getElementById('lbl-weight').textContent = `${state.weight} g`;
-        document.getElementById('lbl-dist').textContent = `${state.distance} m`;
-        document.getElementById('lbl-elev').textContent = `+${state.elevDeg.toFixed(1)}°`;
-        document.getElementById('lbl-yaw').textContent = `${state.yawDeg >= 0 ? '+' : ''}${state.yawDeg.toFixed(1)}°`;
-        document.getElementById('ref-dist').textContent = state.distance;
+        const stage = Math.max(1, Math.floor((state.distance - state.startDistance) / 25) + 1);
+        document.getElementById('hud-stage').textContent = `Stage ${stage} · ${state.distance}m`;
+        document.getElementById('hud-shots').textContent = `Arrow ${Math.min(state.shotNum, state.maxShots)}/${state.maxShots}`;
+        document.getElementById('hud-score').textContent = `Score: ${state.score.toLocaleString()}`;
+        document.getElementById('hud-best').textContent = `Best: ${state.best.toLocaleString()}`;
+        document.getElementById('hud-wind').textContent = `${state.wind >= 0 ? '+' : ''}${state.wind.toFixed(1)} m/s ${state.wind >= 0 ? '→' : '←'}`;
+        document.getElementById('hud-elev').textContent = `+${state.elevDeg.toFixed(1)}°`;
+        document.getElementById('hud-yaw').textContent = `${state.yawDeg >= 0 ? '+' : ''}${state.yawDeg.toFixed(1)}°`;
+        document.getElementById('lbl-elev').textContent = `${state.elevDeg.toFixed(1)}°`;
+        document.getElementById('lbl-yaw').textContent = `${state.yawDeg.toFixed(1)}°`;
+        document.getElementById('lbl-weight').textContent = GAME_MODE === 'pistol' ? `${state.weight} gr` : `${state.weight} lbs`;
+        document.getElementById('scope-readout').textContent = `3.5× OPTIC · ${state.distance}m`;
 
-        const wm = weightMult(state.weight), speed = Math.round(launchSpeed(state.weight));
-        const desc = state.weight <= 7 ? 'Fast, wind-sensitive' : (state.weight >= 16 ? 'Heavy, cuts wind' : 'Balanced flight');
-        document.getElementById('weight-note').textContent = `${desc} · ${speed} m/s · ${wm.toFixed(2)}× score`;
+        const mBtn = document.getElementById('btn-target-mode');
+        if (state.targetMode === 'pendulum') mBtn.textContent = 'Target: Pendulum (1.50×)';
+        else if (state.targetMode === 'moving') mBtn.textContent = 'Target: Rail Move (1.25×)';
+        else mBtn.textContent = 'Target: Stationary';
 
-        document.getElementById('ring-2').textContent = `${Math.round(10 * state.distance * wm).toLocaleString()} pts`;
-        document.getElementById('ring-4').textContent = `${Math.round(7.5 * state.distance * wm).toLocaleString()} pts`;
-        document.getElementById('ring-6').textContent = `${Math.round(5.0 * state.distance * wm).toLocaleString()} pts`;
-        document.getElementById('ring-8').textContent = `${Math.round(2.5 * state.distance * wm).toLocaleString()} pts`;
-        document.getElementById('ring-10').textContent = `${Math.round(1.0 * state.distance * wm).toLocaleString()} pts`;
+        const mulBtn = document.getElementById('btn-mulligan');
+        mulBtn.textContent = state.mulliganUsed ? '+1 Used' : '+1 Arrow (1)';
+        mulBtn.disabled = state.mulliganUsed;
 
-        const pitch = (state.elevDeg * Math.PI) / 180, yaw = (-state.yawDeg * Math.PI) / 180;
-        bowGroup.rotation.set(pitch * 0.6, yaw, 0);
-        if (!state.flying && state.followTimer <= 0) {
-          camera.position.set(0, 1.62, 0.25);
-          camera.rotation.set(pitch * 0.45, yaw, 0);
+        // Atmosphere shift by stage
+        if (stage % 3 === 2) {
+          scene.background.setHex(0x2a161d);
+          scene.fog.color.setHex(0x2a161d);
+          sunLight.color.setHex(0xfb923c);
+        } else if (stage % 3 === 0) {
+          scene.background.setHex(0x050914);
+          scene.fog.color.setHex(0x050914);
+          sunLight.color.setHex(0x93c5fd);
+        } else {
+          scene.background.setHex(0x0b172a);
+          scene.fog.color.setHex(0x0b172a);
+          sunLight.color.setHex(0xfef3c7);
         }
-        positionTarget(); drawInset();
+
+        applyEquippedVisuals();
+        updateTrajectoryArc();
       }
 
-      function playBowTwang(chargeVal) {
-        if (state.muted) return;
-        initAudio();
-        if (!state.audioCtx) return;
-        const now = state.audioCtx.currentTime;
-        const c = Math.max(0.3, Math.min(1.0, chargeVal || 0.85));
-        const baseFreq = 132 + c * 34;
-        [1, 2.02].forEach((harm, idx) => {
-          const osc = state.audioCtx.createOscillator();
-          const gain = state.audioCtx.createGain();
-          osc.type = idx === 0 ? 'triangle' : 'sine';
-          osc.frequency.setValueAtTime(baseFreq * harm * 1.18, now);
-          osc.frequency.exponentialRampToValueAtTime(baseFreq * harm, now + 0.07);
-          osc.frequency.exponentialRampToValueAtTime(baseFreq * harm * 0.94, now + 0.34);
-          const peak = (idx === 0 ? 0.16 : 0.07) * (0.7 + c * 0.3);
-          gain.gain.setValueAtTime(0.001, now);
-          gain.gain.linearRampToValueAtTime(peak, now + 0.012);
-          gain.gain.exponentialRampToValueAtTime(0.0008, now + (idx === 0 ? 0.36 : 0.24));
-          osc.connect(gain);
-          gain.connect(state.audioCtx.destination);
-          osc.start(now);
-          osc.stop(now + 0.38);
-        });
-      }
-
-      function shoot() {
+      function fireShot() {
         if (state.flying) return;
-        if (state.shotNum > state.maxShots) { resetRound(); return; }
-        initAudio(); state.runShots = (state.runShots || 0) + 1; playBowTwang(state.drawCharge || 0.85);
+        initAudio();
+        const eq = getEquipped();
+        const charge = Math.max(0.35, state.drawCharge || 0.88);
+        const sweet = charge >= eq.sweetMin && charge <= eq.sweetMax;
+        const steadyBonus = sweet ? 1.15 : 1.0;
 
-        const v0 = launchSpeed(state.weight), pitch = (state.elevDeg * Math.PI) / 180, yaw = (-state.yawDeg * Math.PI) / 180;
-        state.flying = true; nockedArrow.visible = false; flyingArrowMesh.visible = true;
+        state.flying = true;
+        state.runShots++;
+        projMesh.visible = true;
+        projState.pos.copy(weaponGroup.position);
+        const v0 = launchVelocity() * (0.6 + charge * 0.45);
+        const el = THREE.MathUtils.degToRad(state.elevDeg);
+        const yw = THREE.MathUtils.degToRad(state.yawDeg);
+        projState.vel.set(
+          Math.sin(yw) * Math.cos(el) * v0,
+          Math.sin(el) * v0,
+          -Math.cos(yw) * Math.cos(el) * v0
+        );
+        projState.steadyBonus = steadyBonus;
 
-        const horiz = v0 * Math.cos(pitch);
-        state.arrowPhys = { x: 0, y: 1.5, z: -0.5, vx: -horiz * Math.sin(yaw), vy: v0 * Math.sin(pitch), vz: -horiz * Math.cos(yaw), t: 0 }; resetArrowTrail(0, 1.5, -0.5); triggerHaptic(45, 0.3, 0.5);
+        if (GAME_MODE === 'pistol') {
+          recoilTimer = 0.14;
+          if (muzzleFlashMesh) muzzleFlashMesh.visible = true;
+          playTone(155, 0.09, 'sawtooth', 0.25);
+          playTone(540, 0.06, 'square', 0.14);
+          const casing = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.005, 0.005, 0.022, 8),
+            new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.9, roughness: 0.15 })
+          );
+          casing.position.copy(weaponGroup.position).add(new THREE.Vector3(0.03, 0.04, -0.02));
+          scene.add(casing);
+          brassCasings.push({ mesh: casing, vx: 1.5, vy: 1.9, vz: 0.3, life: 1.0, pinged: false });
+        } else {
+          playTone(190, 0.14, 'triangle', 0.2);
+          playTone(440, 0.10, 'sine', 0.1);
+        }
+        triggerHaptic(35);
+        state.drawCharge = 0;
+        document.getElementById('draw-hud').classList.add('hidden');
       }
 
-      function resolveHit(hitX, hitY, flightTime, drop_m) {
-        state.flying = false; state.followTimer = 1.1;
-        const missY = hitY - 1.5, radialM = Math.sqrt(hitX * hitX + missY * missY), diaMm = radialM * 20, wm = weightMult(state.weight);
-        let ringLabel = 'Miss', mult = 0;
-        if (radialM <= 0.23) { ringLabel = 'Bullseye (Gold)!'; mult = 10.0; }
-        else if (radialM <= 0.46) { ringLabel = 'Inner Yellow Ring'; mult = 7.5; }
-        else if (radialM <= 0.69) { ringLabel = 'Mid Red Ring'; mult = 5.0; }
-        else if (radialM <= 0.92) { ringLabel = 'Outer Blue Ring'; mult = 2.5; }
-        else if (radialM <= 1.15) { ringLabel = 'Outer White Ring'; mult = 1.0; }
-
-        const pts = Math.round(mult * state.distance * wm);
-        state.score += pts;
-        if (state.score > state.best) { state.best = state.score; try { localStorage.setItem('RAMA_BANA_best', String(state.best)); } catch (e) {} }
-
-        state.hits.push({ dxMm: (hitX / 1.15) * 5.2, dyMm: (-missY / 1.15) * 5.2, pts });
-        document.getElementById('val-drop').textContent = `${drop_m.toFixed(2)} m`;
+      function resolveImpact(hitTarget) {
+        state.flying = false;
+        projMesh.visible = false;
         const banner = document.getElementById('shot-banner');
-        banner.classList.remove('hidden');
-        banner.innerHTML = `<span class="font-bold text-amber-300">${ringLabel}</span> · +${pts} pts · Time: <b>${flightTime.toFixed(2)}s</b> · Drop: <b>${drop_m.toFixed(2)}m</b>`;
+        const stage = Math.max(1, Math.floor((state.distance - state.startDistance) / 25) + 1);
 
-        playTone(pts > 0 ? (diaMm <= 2 ? 880 : 520) : 140, 0.22, pts > 0 ? 'sine' : 'sawtooth', pts > 0 ? 0.16 : 0.08);
-        if (pts > 0) {
-          state.totalHits = (state.totalHits || 0) + 1;
-          if (state.totalHits % 5 === 0) {
-            state.distance += 25;
-            const distSlider = document.getElementById('in-dist');
-            if (distSlider) {
-              if (Number(distSlider.max) < state.distance) distSlider.max = String(state.distance);
-              distSlider.value = String(state.distance);
+        if (hitTarget) {
+          const dx = projState.pos.x - targetGroup.position.x;
+          const dy = projState.pos.y - targetGroup.position.y;
+          const r = Math.hypot(dx, dy);
+          let ringPts = 0;
+          if (r <= 0.23) ringPts = 10;
+          else if (r <= 0.46) ringPts = 8;
+          else if (r <= 0.69) ringPts = 6;
+          else if (r <= 0.92) ringPts = 4;
+          else if (r <= 1.15) ringPts = 2;
+
+          if (ringPts > 0) {
+            state.stageHits++;
+            state.totalHits++;
+            state.streak++;
+            if (state.streak > state.runBestStreak) state.runBestStreak = state.streak;
+            if (ringPts === 10) state.runBullseyes++;
+
+            const moveMult = state.targetMode === 'pendulum' ? 1.5 : (state.targetMode === 'moving' ? 1.25 : 1.0);
+            const pts = Math.round(ringPts * state.distance * (1 + state.streak * 0.1) * (projState.steadyBonus || 1.0) * moveMult);
+            state.score += pts;
+            if (state.score > state.best) {
+              state.best = state.score;
+              localStorage.setItem(STORAGE_PREFIX + 'best', String(state.best));
             }
-            banner.innerHTML += ` · <span class="text-cyan-300 font-bold">5 Hits! Range +25m ? ${state.distance}m</span>`;
+
+            // Leave stuck marker on target face
+            const pin = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.01, 0.01, 0.28, 6),
+              new THREE.MeshStandardMaterial({ color: ringPts === 10 ? 0xfacc15 : 0x38bdf8 })
+            );
+            pin.rotation.x = Math.PI / 2;
+            pin.position.set(dx, dy, 0.16);
+            stuckGroup.add(pin);
+
+            playTone(ringPts === 10 ? 880 : 620, 0.2, 'triangle', 0.18);
+            triggerHaptic(50);
+            banner.innerHTML = `<span class="text-amber-300 font-black">${ringPts === 10 ? 'BULLSEYE 10!' : ringPts + ' RING HIT!'}</span> +<b>${pts}</b> pts (${state.stageHits}/5 stage hits)`;
+          } else {
+            state.streak = 0;
+            playTone(130, 0.25, 'sawtooth', 0.14);
+            banner.innerHTML = `<span class="text-rose-400 font-bold">Wide Shot!</span> Missed target rings.`;
           }
+        } else {
+          state.streak = 0;
+          playTone(120, 0.25, 'sawtooth', 0.14);
+          banner.innerHTML = `<span class="text-rose-400 font-bold">Ground Impact!</span> Adjust elevation or windage.`;
         }
-        state.shotNum += 1;
-        const maxWind = state.distance >= 120 ? 3.4 : 4.5; state.wind = Math.max(-maxWind, Math.min(maxWind, state.wind + (nextRangeRand() - 0.5) * 1.1));
+
+        state.shotNum++;
+        state.wind = Math.round((state.wind + (Math.random() - 0.5) * 1.2) * 10) / 10;
+        state.wind = Math.max(-4.5, Math.min(4.5, state.wind));
+
+        if (state.stageHits >= 5) {
+          while (stuckGroup.children.length) stuckGroup.remove(stuckGroup.children[0]);
+          state.stageHits = 0;
+          state.shotNum = 1;
+          state.baseMaxShots++;
+          state.maxShots = state.baseMaxShots;
+          state.mulliganUsed = false;
+          state.distance += 25;
+          const nextStage = Math.floor((state.distance - state.startDistance) / 25) + 1;
+          if (nextStage > state.bestStage) {
+            state.bestStage = nextStage;
+            localStorage.setItem(STORAGE_PREFIX + 'best_stage', String(state.bestStage));
+          }
+          playTone(523, 0.15, 'triangle', 0.16, 0);
+          playTone(659, 0.15, 'triangle', 0.16, 0.12);
+          playTone(784, 0.25, 'triangle', 0.18, 0.24);
+          banner.innerHTML = `<span class="text-emerald-300 font-black">STAGE ${stage} CLEARED (5/5)!</span> Advancing to <b>${state.distance}m</b> (+1 Reserve Shot)!`;
+        } else if (state.shotNum > state.maxShots) {
+          saveLeaderboard(state.score, stage, state.distance);
+          if (state.score > 0) {
+            document.getElementById('sc-score').textContent = `${state.score.toLocaleString()} PTS`;
+            document.getElementById('sc-sub').textContent = `Stage ${stage} · ${state.distance}m`;
+            document.getElementById('sc-acc').textContent = `${Math.round((state.totalHits / Math.max(1, state.runShots)) * 100)}%`;
+            document.getElementById('sc-bull').textContent = String(state.runBullseyes);
+            document.getElementById('sc-str').textContent = `${state.runBestStreak}×`;
+            document.getElementById('scorecard-modal').classList.remove('hidden');
+          }
+          while (stuckGroup.children.length) stuckGroup.remove(stuckGroup.children[0]);
+          state.score = 0;
+          state.shotNum = 1;
+          state.stageHits = 0;
+          state.totalHits = 0;
+          state.baseMaxShots = 5;
+          state.maxShots = 5;
+          state.mulliganUsed = false;
+          state.streak = 0;
+          state.runShots = 0;
+          state.runBullseyes = 0;
+          state.runBestStreak = 0;
+          state.distance = state.startDistance;
+          banner.innerHTML = `<span class="text-rose-400 font-bold">Stage Target Not Achieved!</span> Score reset to 0 · Back to <b>70m</b>.`;
+        }
         updateUI();
       }
 
-      function useStageMulligan() {
-        if (state.mulliganUsed) return;
-        state.mulliganUsed = true;
-        state.maxShots = (state.maxShots || 5) + 1;
-        triggerHaptic(35, 0.4, 0.5);
-        playTone(660, 0.16, 'triangle', 0.14);
-        const banner = document.getElementById('shot-banner');
-        if (banner) {
-          banner.innerHTML = `<span class="font-bold text-emerald-300">Extra Quiver Arrow!</span> Shots increased to <b>${state.maxShots}</b> for this stage.`;
-        }
-        updateUI();
+      function saveLeaderboard(sc, stg, dist) {
+        if (sc <= 0) return;
+        let list = [];
+        try { list = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'lb') || '[]'); } catch (e) {}
+        list.push({ score: sc, stage: stg, dist, date: new Date().toLocaleDateString() });
+        list.sort((a, b) => b.score - a.score);
+        localStorage.setItem(STORAGE_PREFIX + 'lb', JSON.stringify(list.slice(0, 5)));
       }
 
-      function syncMulliganButtons() {
-        const deskBtn = document.getElementById('btn-mulligan');
-        const mobBtn = document.getElementById('btn-touch-mulligan');
-        const avail = !state.mulliganUsed;
-        if (deskBtn) {
-          deskBtn.textContent = avail ? '+1 Arrow (1)' : '+1 Arrow (Used)';
-          deskBtn.disabled = !avail;
-          deskBtn.classList.toggle('opacity-45', !avail);
-        }
-        if (mobBtn) {
-          mobBtn.textContent = avail ? '+1' : '0';
-          mobBtn.disabled = !avail;
-          mobBtn.classList.toggle('opacity-45', !avail);
-        }
-      }
-
-      function resetRound() {
-        const curStage = Math.max(1, Math.floor((state.distance - (state.startDistance || 70)) / 25) + 1);
-        saveTournamentScore(state.score, curStage, state.distance);
-        clearStuckArrows();
-        state.score = 0; state.shotNum = 1; state.hits = []; state.totalHits = 0; state.stageHits = 0; state.baseMaxShots = 5; state.maxShots = 5; state.mulliganUsed = false; state.streak = 0; state.runShots = 0; state.runBullseyes = 0; state.runBestStreak = 0; state.distance = state.startDistance || 70; state.flying = false; state.followTimer = 0;
-        const distSlider = document.getElementById('in-dist');
-        if (distSlider) distSlider.value = String(state.distance);
-        nockedArrow.visible = true; flyingArrowMesh.visible = false;
-        document.getElementById('val-drop').textContent = '—';
-        document.getElementById('shot-banner').classList.add('hidden');
-        updateUI();
-      }
-
-      function resize() {
-        const rect = stageWrap.getBoundingClientRect(), w = Math.max(320, rect.width), h = Math.max(300, rect.height);
-        camera.aspect = w / h; camera.updateProjectionMatrix();
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.12; renderer.setSize(w, h);
-      }
-
-      let lastTs = 0;
-      const keysHeld = {};
+      // --- Controls & Events ---
+      const keys = {};
       window.addEventListener('keydown', e => {
-        if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
-        keysHeld[e.code] = true;
-        if (e.code === 'Space' && !state.flying && state.followTimer <= 0) state.dragging = true;
-        if (e.code === 'KeyR') resetRound();
+        keys[e.code] = true;
+        if (e.code === 'Space' && !state.flying) { e.preventDefault(); state.dragging = true; }
+        if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { state.scoped = true; document.getElementById('scope-overlay').classList.remove('hidden'); }
       });
       window.addEventListener('keyup', e => {
-        keysHeld[e.code] = false;
-        if (e.code === 'Space' && state.dragging) { state.dragging = false; shoot(); }
+        keys[e.code] = false;
+        if (e.code === 'Space' && state.dragging) { state.dragging = false; fireShot(); }
+        if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { state.scoped = false; document.getElementById('scope-overlay').classList.add('hidden'); }
       });
 
-      let gpDrawHeld = false;
-      function pollInputs(dt) {
-        if (state.flying || state.followTimer > 0) return;
-        let dElev = 0, dYaw = 0;
-        if (keysHeld['KeyW'] || keysHeld['ArrowUp']) dElev += 7.5 * dt;
-        if (keysHeld['KeyS'] || keysHeld['ArrowDown']) dElev -= 7.5 * dt;
-        if (keysHeld['KeyA'] || keysHeld['ArrowLeft']) dYaw -= 4.5 * dt;
-        if (keysHeld['KeyD'] || keysHeld['ArrowRight']) dYaw += 4.5 * dt;
-
-        const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-        const gp = pads && (pads[0] || pads[1] || pads[2] || pads[3]);
-        if (gp) {
-          const lx = Math.abs(gp.axes[0] || 0) > 0.14 ? gp.axes[0] : 0;
-          const ly = Math.abs(gp.axes[1] || 0) > 0.14 ? gp.axes[1] : 0;
-          dYaw += lx * 5.0 * dt;
-          dElev -= ly * 8.0 * dt;
-          if (gp.buttons[12]?.pressed) dElev += 7.0 * dt;
-          if (gp.buttons[13]?.pressed) dElev -= 7.0 * dt;
-          if (gp.buttons[14]?.pressed) dYaw -= 4.5 * dt;
-          if (gp.buttons[15]?.pressed) dYaw += 4.5 * dt;
-          const fireDown = Boolean(gp.buttons[0]?.pressed || gp.buttons[7]?.pressed);
-          if (fireDown && !gpDrawHeld) { gpDrawHeld = true; state.dragging = true; }
-          else if (!fireDown && gpDrawHeld) { gpDrawHeld = false; state.dragging = false; shoot(); }
-        }
-
-        if (dElev !== 0 || dYaw !== 0) {
-          state.elevDeg = Math.round(Math.max(0.5, Math.min(28.0, state.elevDeg + dElev)) * 10) / 10;
-          state.yawDeg = Math.round(Math.max(-5.0, Math.min(5.0, state.yawDeg + dYaw)) * 10) / 10;
-          document.getElementById('in-elev').value = state.elevDeg;
-          document.getElementById('in-yaw').value = state.yawDeg;
-          updateUI();
-        }
-      }
-
-      function animate(ts) {
-        const rawDt = Math.min(0.033, (ts - (lastTs || ts)) / 1000); lastTs = ts;
-        pollInputs(rawDt);
-        if (bowAuraRing.visible) bowAuraRing.rotation.z += rawDt * 0.9;
-        camWheels.forEach(w => { if (w.visible) w.rotation.x += rawDt * 2.5; });
-
-        // Wind gust particles drift
-        const wAttr = windGeo.attributes.position;
-        for (let i = 0; i < WIND_COUNT; i++) {
-          let wx = wAttr.getX(i) + state.wind * rawDt * 2.4;
-          if (wx > 7) wx = -7; else if (wx < -7) wx = 7;
-          wAttr.setX(i, wx);
-        }
-        wAttr.needsUpdate = true;
-
-        // Floating 3D +pts popup rise & fade
-        if (activePopup) {
-          activePopup.life -= rawDt;
-          activePopup.sprite.position.y += rawDt * 0.75;
-          activePopup.sprite.material.opacity = Math.max(0, Math.min(1, activePopup.life));
-          if (activePopup.life <= 0) { scene.remove(activePopup.sprite); activePopup = null; }
-        }
-
-        // Corner spectator & cheerleader wave/jump animation
-        if (cheerBoostTimer > 0) cheerBoostTimer -= rawDt;
-        const boost = cheerBoostTimer > 0 ? 1 : 0;
-        for (const c of cheerCrew) {
-          const spd = boost ? 11.0 : 2.8;
-          const wave = Math.sin(ts * 0.001 * spd + c.phase);
-          c.person.position.y = c.baseY + (boost ? Math.abs(wave) * 0.24 : Math.max(0, wave) * 0.03);
-          c.leftArm.rotation.z = 0.4 + wave * (boost ? 0.95 : 0.25);
-          c.rightArm.rotation.z = -0.4 - wave * (boost ? 0.95 : 0.25);
-        }
-
-        // Slow-motion bullseye cam when arrow nears target on target line
-        let timeScale = 1.0;
-        if (state.flying && state.arrowPhys) {
-          const distToTarget = state.arrowPhys.z - (-state.distance);
-          const nearBullseye = Math.hypot(state.arrowPhys.x - targetGroup.position.x, state.arrowPhys.y - 1.5) <= 0.65;
-          if (distToTarget > 0 && distToTarget < 9.0 && nearBullseye) timeScale = 0.32;
-        }
-        const dt = rawDt * timeScale;
-
-        if (state.flying && state.arrowPhys) {
-          const steps = 4, subDt = dt / steps;
-          for (let i = 0; i < steps; i++) {
-            const a = state.arrowPhys; a.t += subDt; a.vy -= 9.81 * subDt;
-            a.vx += (state.wind * subDt * 0.92) / (Math.max(2.2, Math.sqrt(state.weight)) * (1 + a.t * 0.42));
-            const prevX = a.x, prevY = a.y, prevZ = a.z;
-            a.x += a.vx * subDt; a.y += a.vy * subDt; a.z += a.vz * subDt;
-            const targetFaceZ = targetGroup.position.z + 0.09;
-            const prevTipZ = prevZ - 0.55, currTipZ = a.z - 0.55;
-            if (prevTipZ >= targetFaceZ && currTipZ <= targetFaceZ) {
-              const frac = (prevTipZ - targetFaceZ) / Math.max(1e-6, prevTipZ - currTipZ);
-              const hitX = prevX + (a.x - prevX) * frac;
-              const hitY = prevY + (a.y - prevY) * frac;
-              a.x = hitX; a.y = hitY; a.z = targetFaceZ + 0.51; flyingArrowMesh.position.set(a.x, a.y, a.z); flyingArrowMesh.lookAt(new THREE.Vector3(a.x + a.vx, a.y + a.vy, a.z + a.vz)); resolveHit(hitX, hitY, a.t, 0.5 * 9.81 * a.t * a.t);
-              break;
-            }
-            if (a.y <= 0) { resolveHit(a.x, 0, a.t, 0.5 * 9.81 * a.t * a.t); break; }
-          }
-          if (state.arrowPhys) {
-            const a = state.arrowPhys;
-            pushArrowTrail(a.x, a.y, a.z);
-            flyingArrowMesh.position.set(a.x, a.y, a.z);
-            flyingArrowMesh.lookAt(new THREE.Vector3(a.x + a.vx, a.y + a.vy, a.z + a.vz));
-            const zoomBack = timeScale < 1 ? 2.1 : 3.2;
-            camera.position.set(a.x * 0.72, Math.max(0.8, a.y + 0.32), a.z + zoomBack);
-            camera.lookAt(a.x, a.y, a.z - 4);
-          }
-        } else if (state.followTimer > 0) {
-          state.followTimer -= dt;
-          if (state.followTimer <= 0) { nockedArrow.visible = true; flyingArrowMesh.visible = false; arrowTrail.visible = false; updateUI(); }
-        }
-        renderer.render(scene, camera);
-        requestAnimationFrame(animate);
-      }
-
-      const dom = renderer.domElement;
-      dom.addEventListener('pointerdown', e => {
-        if (state.flying || state.followTimer > 0) return;
-        state.dragging = true; state.dragStart = { x: e.clientX, y: e.clientY, elev: state.elevDeg, yaw: state.yawDeg };
-        dom.setPointerCapture(e.pointerId);
+      let dragStart = null;
+      renderer.domElement.addEventListener('pointerdown', e => {
+        if (e.button === 2) { state.scoped = true; document.getElementById('scope-overlay').classList.remove('hidden'); return; }
+        dragStart = { x: e.clientX, y: e.clientY, el: state.elevDeg, yw: state.yawDeg };
       });
-      dom.addEventListener('pointermove', e => {
-        if (!state.dragging || !state.dragStart) return;
-        state.elevDeg = Math.round(Math.max(0.5, Math.min(28.0, state.dragStart.elev + (e.clientY - state.dragStart.y) * 0.05)) * 10) / 10;
-        state.yawDeg = Math.round(Math.max(-5.0, Math.min(5.0, state.dragStart.yaw + (e.clientX - state.dragStart.x) * 0.03)) * 10) / 10;
+      window.addEventListener('pointermove', e => {
+        if (!dragStart) return;
+        state.elevDeg = Math.max(0.5, Math.min(26, Math.round((dragStart.el - (e.clientY - dragStart.y) * 0.05) * 10) / 10));
+        state.yawDeg = Math.max(-6, Math.min(6, Math.round((dragStart.yw + (e.clientX - dragStart.x) * 0.03) * 10) / 10));
         document.getElementById('in-elev').value = state.elevDeg;
         document.getElementById('in-yaw').value = state.yawDeg;
         updateUI();
       });
-      dom.addEventListener('pointerup', () => { if (state.dragging) { state.dragging = false; shoot(); } });
+      window.addEventListener('pointerup', e => {
+        if (e.button === 2) { state.scoped = false; document.getElementById('scope-overlay').classList.add('hidden'); }
+        dragStart = null;
+      });
+      renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
 
-      document.getElementById('in-weight').addEventListener('input', e => { state.weight = parseInt(e.target.value, 10); updateUI(); });
-      document.getElementById('in-dist').addEventListener('input', e => { state.distance = parseInt(e.target.value, 10); updateUI(); });
-      document.getElementById('in-elev').addEventListener('input', e => { state.elevDeg = parseFloat(e.target.value); updateUI(); });
-      document.getElementById('in-yaw').addEventListener('input', e => { state.yawDeg = parseFloat(e.target.value); updateUI(); });
-      document.querySelectorAll('.preset-w').forEach(btn => btn.addEventListener('click', () => {
-        state.weight = parseInt(btn.dataset.w, 10); document.getElementById('in-weight').value = state.weight; updateUI();
+      // Mobile 1-Thumb Aim-While-Holding-Draw
+      const touchDraw = document.getElementById('btn-touch-draw');
+      let tStart = null;
+      touchDraw.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        if (state.flying) return;
+        state.dragging = true;
+        tStart = { x: e.clientX, y: e.clientY, el: state.elevDeg, yw: state.yawDeg };
+      });
+      touchDraw.addEventListener('pointermove', e => {
+        if (!state.dragging || !tStart) return;
+        state.elevDeg = Math.max(0.5, Math.min(26, Math.round((tStart.el - (e.clientY - tStart.y) * 0.06) * 10) / 10));
+        state.yawDeg = Math.max(-6, Math.min(6, Math.round((tStart.yw + (e.clientX - tStart.x) * 0.04) * 10) / 10));
+        updateUI();
+      });
+      ['pointerup', 'pointercancel'].forEach(ev => touchDraw.addEventListener(ev, () => {
+        tStart = null;
+        if (state.dragging) { state.dragging = false; fireShot(); }
       }));
 
-      document.getElementById('btn-shoot').addEventListener('click', shoot);
-      document.getElementById('btn-reset').addEventListener('click', resetRound);
-      document.getElementById('btn-mute').addEventListener('click', e => { state.muted = !state.muted; e.target.textContent = state.muted ? 'Sound: OFF' : 'Sound: ON'; });
-      document.getElementById('btn-leaderboard')?.addEventListener('click', () => { renderLeaderboard(); document.getElementById('leaderboard-modal')?.classList.remove('hidden'); });
-      document.getElementById('btn-close-lb')?.addEventListener('click', () => { document.getElementById('leaderboard-modal')?.classList.add('hidden'); });
-      document.getElementById('leaderboard-modal')?.addEventListener('click', e => { if (e.target.id === 'leaderboard-modal') e.target.classList.add('hidden'); });
+      const touchScope = document.getElementById('btn-touch-scope');
+      touchScope.addEventListener('pointerdown', e => { e.preventDefault(); state.scoped = true; document.getElementById('scope-overlay').classList.remove('hidden'); });
+      ['pointerup', 'pointercancel'].forEach(ev => touchScope.addEventListener(ev, () => { state.scoped = false; document.getElementById('scope-overlay').classList.add('hidden'); }));
 
-      window.addEventListener('resize', resize);
-      window.onload = () => { resize(); updateUI(); requestAnimationFrame(animate); };
-    })();
+      document.getElementById('in-elev').addEventListener('input', e => { state.elevDeg = Number(e.target.value); updateUI(); });
+      document.getElementById('in-yaw').addEventListener('input', e => { state.yawDeg = Number(e.target.value); updateUI(); });
+      document.getElementById('in-weight').addEventListener('input', e => { state.weight = Number(e.target.value); updateUI(); });
+      document.getElementById('btn-fire-desk').addEventListener('click', () => { state.drawCharge = 0.89; fireShot(); });
+      const deskScope = document.getElementById('btn-scope-desk');
+      deskScope.addEventListener('pointerdown', () => { state.scoped = true; document.getElementById('scope-overlay').classList.remove('hidden'); });
+      ['pointerup', 'pointerleave'].forEach(ev => deskScope.addEventListener(ev, () => { state.scoped = false; document.getElementById('scope-overlay').classList.add('hidden'); }));
+
+      document.getElementById('btn-target-mode').addEventListener('click', () => {
+        const modes = ['stationary', 'moving', 'pendulum'];
+        state.targetMode = modes[(modes.indexOf(state.targetMode) + 1) % modes.length];
+        localStorage.setItem(STORAGE_PREFIX + 'target_mode', state.targetMode);
+        updateUI();
+      });
+
+      function useMulligan() {
+        if (state.mulliganUsed) return;
+        state.mulliganUsed = true;
+        state.maxShots++;
+        playTone(680, 0.15, 'triangle', 0.15);
+        updateUI();
+      }
+      document.getElementById('btn-mulligan').addEventListener('click', useMulligan);
+      document.getElementById('btn-touch-mulligan').addEventListener('click', useMulligan);
+
+      document.getElementById('btn-armory').addEventListener('click', () => {
+        const list = document.getElementById('armory-list');
+        list.innerHTML = CATALOG.map(w => {
+          const unl = w.req(state);
+          const eq = state.equippedId === w.id;
+          return `<div class="p-3 rounded-xl border ${eq ? 'bg-purple-500/20 border-purple-400' : 'bg-slate-800 border-slate-700'}">
+            <div class="font-bold text-slate-100">${w.name}</div>
+            <div class="text-cyan-300 mt-0.5">${w.perk}</div>
+            <div class="text-slate-400 mt-0.5">${unl ? 'Unlocked' : w.unlock}</div>
+            ${unl && !eq ? `<button data-wid="${w.id}" class="mt-2 w-full py-1 rounded bg-purple-500 text-slate-950 font-bold cursor-pointer">Equip</button>` : ''}
+          </div>`;
+        }).join('');
+        list.querySelectorAll('[data-wid]').forEach(b => b.addEventListener('click', () => {
+          state.equippedId = b.getAttribute('data-wid');
+          localStorage.setItem(STORAGE_PREFIX + 'equipped', state.equippedId);
+          updateUI();
+          document.getElementById('armory-modal').classList.add('hidden');
+        }));
+        document.getElementById('armory-modal').classList.remove('hidden');
+      });
+      document.getElementById('btn-close-armory').addEventListener('click', () => document.getElementById('armory-modal').classList.add('hidden'));
+
+      document.getElementById('btn-lb').addEventListener('click', () => {
+        let list = [];
+        try { list = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'lb') || '[]'); } catch (e) {}
+        document.getElementById('lb-list').innerHTML = list.length
+          ? list.map((r, idx) => `<div class="flex justify-between p-2 rounded-lg bg-slate-800"><span>#${idx + 1} · Stage ${r.stage} (${r.dist}m)</span><span class="font-bold text-amber-300">${r.score.toLocaleString()} pts</span></div>`).join('')
+          : '<div class="text-slate-400">No tournament scores recorded yet. Complete a run to rank!</div>';
+        document.getElementById('lb-modal').classList.remove('hidden');
+      });
+      document.getElementById('btn-close-lb').addEventListener('click', () => document.getElementById('lb-modal').classList.add('hidden'));
+
+      document.getElementById('btn-daily').addEventListener('click', e => {
+        state.dailyMode = !state.dailyMode;
+        const d = new Date();
+        if (state.dailyMode) {
+          state.wind = Math.round(Math.sin(d.getFullYear() * 100 + d.getDate()) * 32) / 10;
+          e.target.textContent = 'Mode: Daily Challenge';
+        } else {
+          e.target.textContent = 'Mode: Tournament';
+        }
+        updateUI();
+      });
+
+      document.getElementById('btn-mute').addEventListener('click', e => {
+        state.muted = !state.muted;
+        e.target.textContent = state.muted ? 'Sound: OFF' : 'Sound: ON';
+      });
+      document.getElementById('btn-test-av').addEventListener('click', e => {
+        state.muted = false;
+        document.getElementById('btn-mute').textContent = 'Sound: ON';
+        playTone(660, 0.16, 'triangle', 0.18);
+        triggerHaptic(80);
+        e.target.textContent = 'Audio OK!';
+        setTimeout(() => { e.target.textContent = 'Test Audio'; }, 1200);
+      });
+
+      document.getElementById('btn-guide').addEventListener('click', () => document.getElementById('guide-modal').classList.remove('hidden'));
+      document.getElementById('btn-close-guide').addEventListener('click', () => {
+        document.getElementById('guide-modal').classList.add('hidden');
+        localStorage.setItem(STORAGE_PREFIX + 'guide_seen', '1');
+      });
+      if (!localStorage.getItem(STORAGE_PREFIX + 'guide_seen')) {
+        document.getElementById('guide-modal').classList.remove('hidden');
+      }
+
+      document.getElementById('btn-copy-score').addEventListener('click', async e => {
+        const txt = `${document.title} — ${document.getElementById('sc-score').textContent} (${document.getElementById('sc-sub').textContent}) · Play: ${SHARE_URL}`;
+        try { await navigator.clipboard.writeText(txt); e.target.textContent = 'Copied!'; } catch (err) {}
+      });
+      document.getElementById('btn-close-sc').addEventListener('click', () => document.getElementById('scorecard-modal').classList.add('hidden'));
+
+      document.getElementById('btn-reset').addEventListener('click', () => {
+        while (stuckGroup.children.length) stuckGroup.remove(stuckGroup.children[0]);
+        state.score = 0; state.shotNum = 1; state.stageHits = 0; state.totalHits = 0;
+        state.baseMaxShots = 5; state.maxShots = 5; state.mulliganUsed = false; state.distance = state.startDistance;
+        updateUI();
+      });
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // --- Main 60 FPS Animation Loop ---
+      let lastTs = performance.now();
+      function animate(ts) {
+        requestAnimationFrame(animate);
+        const dt = Math.min(0.05, (ts - lastTs) / 1000);
+        lastTs = ts;
+
+        // Keyboard fine aim
+        if (keys['KeyW'] || keys['ArrowUp']) { state.elevDeg = Math.min(26, state.elevDeg + 6 * dt); updateUI(); }
+        if (keys['KeyS'] || keys['ArrowDown']) { state.elevDeg = Math.max(0.5, state.elevDeg - 6 * dt); updateUI(); }
+        if (keys['KeyA'] || keys['ArrowLeft']) { state.yawDeg = Math.max(-6, state.yawDeg - 4 * dt); updateUI(); }
+        if (keys['KeyD'] || keys['ArrowRight']) { state.yawDeg = Math.min(6, state.yawDeg + 4 * dt); updateUI(); }
+
+        // Charge meter & bowstring pullback
+        if (state.dragging && !state.flying) {
+          state.drawCharge = Math.min(1, state.drawCharge + dt * 0.72);
+          const pct = Math.round(state.drawCharge * 100);
+          const eq = getEquipped();
+          const sweet = state.drawCharge >= eq.sweetMin && state.drawCharge <= eq.sweetMax;
+          const hud = document.getElementById('draw-hud');
+          hud.classList.remove('hidden');
+          document.getElementById('draw-bar').style.width = `${pct}%`;
+          document.getElementById('draw-label').textContent = sweet ? `GOLD SWEET SPOT ${pct}% (+15%)` : `CHARGE ${pct}%`;
+          if (bowStringLine) {
+            const pts = bowStringLine.geometry.attributes.position;
+            pts.setZ(1, 0.22 + state.drawCharge * 0.28);
+            pts.needsUpdate = true;
+          }
+        } else if (bowStringLine) {
+          const pts = bowStringLine.geometry.attributes.position;
+          pts.setZ(1, 0.22);
+          pts.needsUpdate = true;
+        }
+
+        // Camera optical zoom & aim orientation
+        const targetFov = state.scoped ? 15 : 50;
+        camera.fov += (targetFov - camera.fov) * 0.18;
+        camera.updateProjectionMatrix();
+        camera.rotation.y = THREE.MathUtils.degToRad(-state.yawDeg * 0.55);
+        camera.rotation.x = THREE.MathUtils.degToRad((state.elevDeg - 4) * 0.35);
+
+        // Wind pennants flutter
+        windPennants.forEach((f, idx) => {
+          f.rotation.y = Math.sin(ts * 0.006 + idx) * 0.18 + (state.wind >= 0 ? 0 : Math.PI);
+        });
+
+        // Target Movement Modes: Stationary | Rail Move (1,2,3+ mm/s) | Pendulum (5,6,7,8+ mm/s)
+        const stageNow = Math.max(1, Math.floor((state.distance - state.startDistance) / 25) + 1);
+        const mHud = document.getElementById('hud-target-motion');
+        const elevY = stageNow >= 4 ? 1.55 + Math.sin(stageNow * 1.4) * 0.9 : 1.55;
+
+        if (state.targetMode === 'moving') {
+          gantryGroup.visible = false;
+          railGroup.visible = true;
+          const mmSec = stageNow;
+          const ampX = Math.min(1.4, 0.55 + (stageNow - 1) * 0.18);
+          const ampZ = Math.min(1.5, 0.35 + (stageNow - 1) * 0.2);
+          const phase = ts * 0.001 * ((mmSec * 0.001) / ampX);
+          targetGroup.position.set(Math.sin(phase) * ampX, elevY, -state.distance + Math.cos(phase * 0.8) * ampZ);
+          targetGroup.rotation.set(0, 0, 0);
+          railGroup.position.set(0, 0, targetGroup.position.z);
+          mHud.textContent = `Rail Move: ${mmSec} mm/s (1.25×)`;
+        } else if (state.targetMode === 'pendulum') {
+          railGroup.visible = false;
+          gantryGroup.visible = true;
+          gantryGroup.position.set(0, 0, -state.distance);
+          const mmSec = 4 + stageNow;
+          const maxAng = Math.min(0.55, 0.32 + (stageNow - 1) * 0.04);
+          const phase = ts * 0.001 * ((mmSec * 0.001) / (2.0 * maxAng));
+          const sx = Math.sin(phase) * 1.15;
+          const sz = Math.cos(phase * 0.85) * 0.75;
+          targetGroup.position.set(sx, elevY + (1 - Math.cos(phase)) * 0.25, -state.distance + sz);
+          targetGroup.rotation.z = -Math.sin(phase) * 0.22;
+          gRod.position.set(sx * 0.5, 3.55, sz * 0.5);
+          mHud.textContent = `Pendulum: ${mmSec} mm/s (1.50×)`;
+        } else {
+          railGroup.visible = false;
+          gantryGroup.visible = false;
+          targetGroup.position.set(0, elevY, -state.distance);
+          targetGroup.rotation.set(0, 0, 0);
+          mHud.textContent = 'Target: Static';
+        }
+
+        // Pistol slide blowback & brass shell physics
+        if (recoilTimer > 0) {
+          recoilTimer -= dt;
+          const kick = Math.sin((recoilTimer / 0.14) * Math.PI);
+          if (pistolSlideMesh) pistolSlideMesh.position.z = -0.042 + kick * 0.045;
+          weaponGroup.rotation.x = kick * 0.16;
+          if (muzzleFlashMesh) muzzleFlashMesh.visible = recoilTimer > 0.09;
+          if (recoilTimer <= 0) {
+            if (pistolSlideMesh) pistolSlideMesh.position.z = -0.042;
+            weaponGroup.rotation.x = 0;
+            if (muzzleFlashMesh) muzzleFlashMesh.visible = false;
+          }
+        }
+        for (let i = brassCasings.length - 1; i >= 0; i--) {
+          const b = brassCasings[i];
+          b.life -= dt;
+          b.vy -= 9.81 * dt;
+          b.mesh.position.x += b.vx * dt;
+          b.mesh.position.y += b.vy * dt;
+          b.mesh.position.z += b.vz * dt;
+          b.mesh.rotation.x += 18 * dt;
+          if (!b.pinged && b.mesh.position.y <= 0.12) { b.pinged = true; playTone(4200, 0.08, 'sine', 0.05); }
+          if (b.life <= 0 || b.mesh.position.y <= 0.02) { scene.remove(b.mesh); brassCasings.splice(i, 1); }
+        }
+
+        // Projectile Flight & Target Plane Intersection
+        if (state.flying) {
+          const prevZ = projState.pos.z;
+          projState.vel.x += state.wind * 0.65 * dt;
+          projState.vel.y -= 9.81 * dt;
+          projState.pos.addScaledVector(projState.vel, dt);
+          projMesh.position.copy(projState.pos);
+          projMesh.lookAt(projState.pos.clone().add(projState.vel));
+
+          const faceZ = targetGroup.position.z + 0.08;
+          if (prevZ >= faceZ && projState.pos.z <= faceZ) {
+            resolveImpact(true);
+          } else if (projState.pos.y <= 0.02 || projState.pos.z < targetGroup.position.z - 15) {
+            resolveImpact(false);
+          }
+        }
+
+        if (weaponAura.visible) weaponAura.rotation.z += dt * 0.9;
+        renderer.render(scene, camera);
+      }
+
+      updateUI();
+      requestAnimationFrame(animate);
+    });
   </script>
 </body>
 </html>
