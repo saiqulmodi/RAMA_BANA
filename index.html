@@ -231,11 +231,14 @@
   <div id="canvas-wrap"></div>
 
   <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      if (typeof THREE === 'undefined') {
-        document.getElementById('shot-banner').innerHTML = '<span class="text-rose-400 font-bold">Three.js CDN failed to load. Check internet connection and refresh.</span>';
-        return;
-      }
+    (function startSimulator() {
+      function boot() {
+        if (typeof THREE === 'undefined') {
+          if (!window.__threeWaitCount) window.__threeWaitCount = 0;
+          if (++window.__threeWaitCount < 40) { setTimeout(boot, 100); return; }
+          document.getElementById('shot-banner').innerHTML = '<span class="text-rose-400 font-bold">Three.js CDN failed to load. Check internet connection and refresh.</span>';
+          return;
+        }
 
       const GAME_MODE = 'archery'; // 'archery' | 'pistol'
       const STORAGE_PREFIX = 'rama_bana_';
