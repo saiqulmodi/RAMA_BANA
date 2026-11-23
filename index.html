@@ -29,7 +29,11 @@
         <span id="hud-score" class="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-200 font-extrabold tabular-nums">Score: 0</span>
         <span id="hud-best" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 border border-slate-600/60 text-slate-300 font-semibold tabular-nums">Best: 0</span>
         <span id="hud-streak" class="text-xs px-2 py-0.5 rounded-full bg-orange-950/90 border border-orange-400/50 text-orange-200 font-semibold tabular-nums">Streak: 1d</span>
-        <button id="btn-target-mode" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600/60 text-slate-200 font-semibold cursor-pointer">Target: Stationary</button>
+        <select id="sel-target-mode" aria-label="Target Movement Mode" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-cyan-500/50 text-cyan-100 font-bold cursor-pointer focus:outline-none focus:ring-1 focus:ring-cyan-400">
+          <option value="stationary" class="bg-slate-900 text-slate-100">Target: Stationary (1.00×)</option>
+          <option value="moving" class="bg-slate-900 text-amber-300">Moving: Straight Rail (1.25×)</option>
+          <option value="pendulum" class="bg-slate-900 text-purple-300">Moving: Pendulum Arc (1.50×)</option>
+        </select>
         <button id="btn-armory" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/50 text-purple-200 font-semibold cursor-pointer">Bows (1/4)</button>
         <button id="btn-daily" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-200 font-semibold cursor-pointer">Mode: Tournament</button>
         <button id="btn-mulligan" type="button" class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 font-semibold cursor-pointer">+1 Arrow (1)</button>
@@ -594,10 +598,8 @@
         document.getElementById('lbl-weight').textContent = GAME_MODE === 'pistol' ? `${state.weight} gr` : `${state.weight} lbs`;
         document.getElementById('scope-readout').textContent = `3.5× OPTIC · ${state.distance}m`;
 
-        const mBtn = document.getElementById('btn-target-mode');
-        if (state.targetMode === 'pendulum') mBtn.textContent = 'Target: Pendulum (1.50×)';
-        else if (state.targetMode === 'moving') mBtn.textContent = 'Target: Rail Move (1.25×)';
-        else mBtn.textContent = 'Target: Stationary';
+        const mSel = document.getElementById('sel-target-mode');
+        if (mSel && mSel.value !== state.targetMode) mSel.value = state.targetMode;
 
         const mulBtn = document.getElementById('btn-mulligan');
         mulBtn.textContent = state.mulliganUsed ? '+1 Used' : '+1 Arrow (1)';
@@ -842,9 +844,8 @@
       deskScope.addEventListener('pointerdown', () => { state.scoped = true; document.getElementById('scope-overlay').classList.remove('hidden'); });
       ['pointerup', 'pointerleave'].forEach(ev => deskScope.addEventListener(ev, () => { state.scoped = false; document.getElementById('scope-overlay').classList.add('hidden'); }));
 
-      document.getElementById('btn-target-mode').addEventListener('click', () => {
-        const modes = ['stationary', 'moving', 'pendulum'];
-        state.targetMode = modes[(modes.indexOf(state.targetMode) + 1) % modes.length];
+      document.getElementById('sel-target-mode').addEventListener('change', e => {
+        state.targetMode = e.target.value;
         localStorage.setItem(STORAGE_PREFIX + 'target_mode', state.targetMode);
         updateUI();
       });
