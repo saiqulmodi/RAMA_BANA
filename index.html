@@ -496,6 +496,51 @@
       targetDisc.castShadow = true;
       targetGroup.add(targetDisc);
 
+      // Score rings as their own meshes in front of the face, so they stay sharp through the scope at 70m-100m:
+      // each ring sits RING_STEP further forward (2 outermost, 10 innermost), with polygonOffset and a renderOrder in sequence.
+      // A transparent top layer carries the ring dividers and the 2-4-6-8-10 numbers.
+      const RING_STEP = 0.004;
+      const RING_DIVIDER = 0x334155;
+      function addScoreRings(parent, radius, faceZ) {
+        const k = radius / 256; // same proportions as the board texture (canvas radius 256)
+        rings.forEach((rg, i) => {
+          const outerR = rg.r * k;
+          const innerR = i + 1 < rings.length ? rings[i + 1].r * k : 0;
+          const geo = innerR > 0 ? new THREE.RingGeometry(innerR, outerR, 96) : new THREE.CircleGeometry(outerR, 96);
+          const col = new THREE.Color(rg.fill);
+          const ring = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+            color: col, emissive: col, emissiveIntensity: 0.22, roughness: 0.45,
+            polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1
+          }));
+          ring.position.z = faceZ + RING_STEP * (i + 1);
+          ring.renderOrder = 1 + i;
+          parent.add(ring);
+        });
+        const lc = document.createElement('canvas');
+        lc.width = 512; lc.height = 512;
+        const lg = lc.getContext('2d');
+        lg.lineWidth = 3;
+        lg.strokeStyle = '#' + RING_DIVIDER.toString(16).padStart(6, '0');
+        lg.font = 'bold 20px sans-serif';
+        lg.textAlign = 'center';
+        rings.forEach(rg => {
+          lg.beginPath(); lg.arc(256, 256, rg.r, 0, Math.PI * 2); lg.stroke();
+          lg.fillStyle = rg.tCol;
+          if (rg.text !== '10') lg.fillText(rg.text, 256, 256 - rg.r + 24);
+          else lg.fillText('10', 256, 263);
+        });
+        const labelTex = new THREE.CanvasTexture(lc);
+        labelTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        const labels = new THREE.Mesh(
+          new THREE.PlaneGeometry(radius * 2, radius * 2),
+          new THREE.MeshBasicMaterial({ map: labelTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 })
+        );
+        labels.position.z = faceZ + RING_STEP * (rings.length + 1);
+        labels.renderOrder = 1 + rings.length;
+        parent.add(labels);
+      }
+      addScoreRings(targetGroup, 1.15, 0.08);
+
       // Tripod Stand Legs
       [-0.75, 0.75].forEach(lx => {
         const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 2.2, 8), trunkMat);
@@ -572,6 +617,7 @@
         disc.rotation.x = Math.PI / 2;
         disc.castShadow = true;
         unit.add(disc);
+        addScoreRings(unit, 0.44, 0.07);
 
         const halo = new THREE.Mesh(
           new THREE.RingGeometry(0.46, 0.52, 32),
@@ -625,6 +671,60 @@
       }
       camera.add(weaponView);
       const WEAPON_BASE_POS = weaponView.position.clone();
+      const WEAPON_BASE_FOV = 50;  // the unscoped field of view the bow is framed for
+      const BOW_HEIGHT = 1.56;     // limb tip to limb tip in the bow's own units
+      // Bow framing: lower-right / centre-right of the view, sized to the window so the riser, both limbs,
+      // the string and the nocked arrow stay on screen in landscape and portrait. Rides on the camera, so
+      // elevation and windage tilt the whole sight picture with it.
+      const BOW_VIEW_YAW = -0.85; // turned further than the pistol so the curved limbs and the string read as a profile
+      const ARROW_VIEW_SCALE = new THREE.Vector3(1.6, 1.6, 1.0), BOW_REF_SCALE = 0.4; // arrow-to-bow proportion as designed
+      function layoutBowView() {
+        if (GAME_MODE === 'pistol') return;
+        const W = window.innerWidth, H = window.innerHeight;
+        // Free 3D area: below the top HUD, and left of (landscape) or above (portrait) the aim panel
+        const hud = document.querySelector('header');
+        const panel = document.querySelector('aside');
+        const touchBar = document.getElementById('mobile-touch-bar');
+        let top = hud ? hud.getBoundingClientRect().bottom : 0, right = W, bottom = H;
+        const pr = panel ? panel.getBoundingClientRect() : null;
+        if (pr && pr.width > 0) {
+          if (pr.left > W * 0.5) right = pr.left - 6; else bottom = pr.top - 6;
+        }
+        const tb = touchBar ? touchBar.getBoundingClientRect() : null; // 0 high when hidden (sm and up)
+        if (tb && tb.height > 0) bottom = Math.min(bottom, tb.top - 6);
+        if (bottom - top < H * 0.15) { top = H * 0.35; bottom = H; } // panels fill the screen: fall back to the lower view
+        const freeW = right, freeH = bottom - top;
+        // Bow height in pixels: most of the free height, never more than half the screen
+        const bowPx = Math.min(freeH * 0.82, H * 0.5, freeW * 0.9);
+        const cxPx = right - Math.max(bowPx * 0.32, freeW * (W < H ? 0.16 : 0.14));
+        const cyPx = bottom - bowPx * 0.62; // room under the lower limb tip
+        const d = 1.0;
+        const halfH = Math.tan(THREE.MathUtils.degToRad(WEAPON_BASE_FOV / 2)) * d;
+        const halfW = halfH * camera.aspect;
+        const s = (bowPx / H) * 2 * halfH / BOW_HEIGHT;
+        weaponView.scale.setScalar(s);
+        weaponView.rotation.y = BOW_VIEW_YAW;
+        WEAPON_BASE_POS.set((cxPx / W * 2 - 1) * halfW, -(cyPx / H * 2 - 1) * halfH, -d);
+        weaponView.position.copy(WEAPON_BASE_POS);
+        if (arrowView) {
+          arrowView.position.copy(WEAPON_BASE_POS);
+          arrowView.scale.copy(ARROW_VIEW_SCALE).multiplyScalar(s / BOW_REF_SCALE);
+        }
+      }
+      // Hold Scope: the bow (and nocked arrow) fades and slides down-right out of the zoomed reticle
+      const weaponMats = [];
+      function collectWeaponMats() {
+        weaponMats.length = 0;
+        [weaponView, arrowView].forEach(root => root && root.traverse(o => {
+          if (o.material) weaponMats.push({ m: o.material, base: o.material.transparent ? o.material.opacity : 1, wasT: o.material.transparent });
+        }));
+      }
+      let weaponFade = -1;
+      function setWeaponFade(a) {
+        if (Math.abs(a - weaponFade) < 0.004) return;
+        weaponFade = a;
+        weaponMats.forEach(w => { w.m.transparent = w.wasT || a < 1; w.m.opacity = w.base * a; });
+      }
       let bowShake = 0, creakTimer = 0;
       // Hollow "thunk" when an arrow strikes the target board
       function playThunk() {
@@ -773,6 +873,9 @@
         arrowView.add(nockedArrowGroup);
         camera.add(arrowView);
       }
+      layoutBowView();
+      window.addEventListener('load', layoutBowView); // panels have their final size once fonts and styles are in
+      collectWeaponMats();
 
       // Dotted 3D Ballistic Trajectory Preview Arc
       const arcPoints = Array.from({ length: 36 }, () => new THREE.Vector3());
@@ -819,7 +922,7 @@
           new THREE.CircleGeometry(0.075, 24),
           new THREE.MeshBasicMaterial({ map: makeShotMarkTexture(num, kind), transparent: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
         );
-        mark.renderOrder = 2;
+        mark.renderOrder = 2 + rings.length; // drawn after the score rings and their number layer
         if (onGround) {
           mark.scale.setScalar(2.2);
           mark.rotation.x = -Math.PI / 2;
@@ -827,7 +930,7 @@
           landGroup.add(mark);
         } else if (targetGroup.visible) {
           const local = targetGroup.worldToLocal(worldPos.clone());
-          mark.position.set(local.x, local.y, 0.095);
+          mark.position.set(local.x, local.y, 0.08 + RING_STEP * (rings.length + 2)); // just in front of the ring layers
           stuckGroup.add(mark);
         } else {
           mark.position.set(worldPos.x, worldPos.y, worldPos.z + 0.1);
@@ -1314,6 +1417,7 @@
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        layoutBowView();
       });
 
       // --- Rama Astra Tactical Power Pills (Divya Drishti, Vayu Lock, Agni 2x) ---
@@ -1633,8 +1737,20 @@
         const targetFov = state.scoped ? scopeFov : 50;
         camera.fov += (targetFov - camera.fov) * 0.18;
         camera.updateProjectionMatrix();
-        weaponView.visible = camera.fov > 30; // bow/pistol out of the way while looking through the scope
+        // Hold Scope: 0 = bow fully in view, 1 = fully zoomed. The bow fades and slides down-right as the optic zooms,
+        // so it never crosses the reticle, and comes back the same way when the scope is released.
+        const scopeT = THREE.MathUtils.clamp((WEAPON_BASE_FOV - camera.fov) / Math.max(1, WEAPON_BASE_FOV - scopeFov), 0, 1);
+        const scopeOut = scopeT * scopeT * (3 - 2 * scopeT);
+        weaponView.visible = scopeOut < 0.97;
         if (arrowView) arrowView.visible = weaponView.visible;
+        setWeaponFade(1 - scopeOut);
+        const shakeK = bowShake > 0 ? bowShake / 0.32 : 0;
+        weaponView.position.set(
+          WEAPON_BASE_POS.x + scopeOut * 0.25 + Math.sin(ts * 0.09) * 0.012 * shakeK,
+          WEAPON_BASE_POS.y - scopeOut * 0.45 + Math.sin(ts * 0.07) * 0.010 * shakeK,
+          WEAPON_BASE_POS.z - 0.03 * shakeK
+        );
+        if (arrowView) arrowView.position.copy(weaponView.position);
         camera.rotation.y = THREE.MathUtils.degToRad(-state.yawDeg * 0.55);
         camera.rotation.x = THREE.MathUtils.degToRad((state.elevDeg - 4) * 0.35);
 
@@ -1658,14 +1774,9 @@
         // Release shiver of the bow
         if (bowShake > 0) {
           bowShake = Math.max(0, bowShake - dt);
-          const k = bowShake / 0.32;
-          weaponView.position.set(
-            WEAPON_BASE_POS.x + Math.sin(ts * 0.09) * 0.012 * k,
-            WEAPON_BASE_POS.y + Math.sin(ts * 0.07) * 0.010 * k,
-            WEAPON_BASE_POS.z - 0.03 * k
-          );
+          const k = bowShake / 0.32; // position shiver is applied with the scope offset above
           weaponView.rotation.z = Math.sin(ts * 0.11) * 0.05 * k;
-          if (bowShake === 0) { weaponView.position.copy(WEAPON_BASE_POS); weaponView.rotation.z = 0; }
+          if (bowShake === 0) weaponView.rotation.z = 0;
         }
 
         // Wind pennants flutter
