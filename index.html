@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>RAMA_BANA 3D Archery</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Ccircle cx='44' cy='20' r='14' fill='none' stroke='%2338bdf8' stroke-width='3'/%3E%3Ccircle cx='44' cy='20' r='8' fill='none' stroke='%23ef4444' stroke-width='3'/%3E%3Ccircle cx='44' cy='20' r='3.5' fill='%23facc15'/%3E%3Cpath d='M14 14 Q 34 32 14 50' fill='none' stroke='%23f59e0b' stroke-width='4.5' stroke-linecap='round'/%3E%3Cline x1='10' y1='46' x2='41' y2='22' stroke='%23fde047' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="var s=document.createElement('script');s.src='https://unpkg.com/three@0.128.0/build/three.min.js';document.head.appendChild(s);"></script>
+  <link rel="stylesheet" href="vendor/tailwind.css" />
+  <script src="vendor/three.min.js"></script>
   <style>
     html, body { margin: 0; padding: 0; overflow: hidden; background: #070d19; touch-action: none; user-select: none; }
     canvas { display: block; width: 100vw; height: 100vh; }
@@ -323,6 +323,11 @@
         osc.connect(g); g.connect(state.audioCtx.destination);
         osc.start(t); osc.stop(t + dur + 0.02);
       }
+      // Stratos analytics (only analytics used): level_start / level_complete / game_over with seconds
+      function track(name, details) { try { var S = window.Stratos || parent.Stratos; if (S) S.track(name, details); } catch (e) {} }
+      let levelStartTs = performance.now();
+      function trackLevelStart(level) { levelStartTs = performance.now(); track('level_start', { level }); }
+      function levelSeconds() { return Math.round((performance.now() - levelStartTs) / 1000); }
       function triggerHaptic(ms = 30) {
         if (navigator.vibrate) navigator.vibrate(ms);
       }
@@ -1062,8 +1067,11 @@
           playTone(523, 0.15, 'triangle', 0.16, 0);
           playTone(659, 0.15, 'triangle', 0.16, 0.12);
           playTone(784, 0.25, 'triangle', 0.18, 0.24);
+          track('level_complete', { level: stage, seconds: levelSeconds(), score: state.score, distance: state.distance - 25 });
+          trackLevelStart(nextStage);
           banner.innerHTML = `<span class="text-emerald-300 font-black">STAGE ${stage} CLEARED (5/5)!</span> Advancing to <b>${state.distance}m</b> (+1 Reserve Shot)!`;
         } else if (state.shotNum > state.maxShots) {
+          track('game_over', { level: stage, won: false, seconds: levelSeconds(), score: state.score, distance: state.distance });
           saveLeaderboard(state.score, stage, state.distance);
           if (state.score > 0) {
             document.getElementById('sc-score').textContent = `${state.score.toLocaleString()} PTS`;
@@ -1087,6 +1095,7 @@
           state.runBestStreak = 0;
           state.distance = state.startDistance;
           banner.innerHTML = `<span class="text-rose-400 font-bold">Stage Target Not Achieved!</span> Score reset to 0 · Back to <b>70m</b>.`;
+          trackLevelStart(1);
         }
         updateUI();
       }
@@ -1294,6 +1303,7 @@
       document.getElementById('btn-close-sc').addEventListener('click', () => document.getElementById('scorecard-modal').classList.add('hidden'));
 
       document.getElementById('btn-reset').addEventListener('click', () => {
+        trackLevelStart(1);
         while (stuckGroup.children.length) stuckGroup.remove(stuckGroup.children[0]); while (landGroup.children.length) landGroup.remove(landGroup.children[0]);
         state.score = 0; state.shotNum = 1; state.stageHits = 0; state.totalHits = 0;
         state.baseMaxShots = 5; state.maxShots = 5; state.mulliganUsed = false; state.distance = state.startDistance; resetShotAim(); resetAstrasForStage(); activeLineIndex = 0; refreshFiveLineHighlight(); resetShotAim(); resetShotAim();
@@ -1786,6 +1796,7 @@
       }
 
       updateUI();
+      trackLevelStart(1);
       requestAnimationFrame(animate);
       }
       boot();
