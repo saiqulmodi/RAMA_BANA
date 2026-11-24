@@ -4,7 +4,7 @@
   "title": "RAMA_BANA 3D Archery",
   "author": "@saiqulmodi",
   "category": "Sports & Precision",
-  "description": "3D ballistic archery simulator with 0.002° elevation/windage micro-sights, 3.5x optical scope, Rama Astra power pills, and 4 target modes.",
+  "description": "3D ballistic archery simulator with 0.002° elevation/windage micro-sights, range-adaptive optical scope, Rama Astra power pills, and 4 target modes.",
   "entry": "index.html",
   "thumbnail": "thumbnail.svg",
   "controls": ["Mouse / Touch Drag", "WASD / Arrows", "Space", "PS5 DualSense"]
